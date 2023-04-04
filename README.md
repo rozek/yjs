@@ -332,6 +332,9 @@ or any of its children.
   <p>
     A shareable Map type.
   </p>
+  <p>
+    Please note: if you plan to write many entries with different keys in arbitrary order, you may perhaps better use <a href="https://github.com/rozek/y-utility/blob/main/README.md#ykeyvalue">y-utility/y-keyvalue</a> instead, which uses much less memory in such a situation.
+  </p>
   <pre><code>const ymap = new Y.Map()</code></pre>
   <dl>
     <b><code>parent:Y.AbstractType|null</code></b>
