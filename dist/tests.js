@@ -96,6 +96,88 @@
   };
 
   /**
+   * Utility module to work with sets.
+   *
+   * @module set
+   */
+
+  const create$5 = () => new Set();
+
+  /**
+   * Utility module to work with Arrays.
+   *
+   * @module array
+   */
+
+
+  /**
+   * Return the last element of an array. The element must exist
+   *
+   * @template L
+   * @param {ArrayLike<L>} arr
+   * @return {L}
+   */
+  const last = arr => arr[arr.length - 1];
+
+  /**
+   * Append elements from src to dest
+   *
+   * @template M
+   * @param {Array<M>} dest
+   * @param {Array<M>} src
+   */
+  const appendTo = (dest, src) => {
+    for (let i = 0; i < src.length; i++) {
+      dest.push(src[i]);
+    }
+  };
+
+  /**
+   * Transforms something array-like to an actual Array.
+   *
+   * @function
+   * @template T
+   * @param {ArrayLike<T>|Iterable<T>} arraylike
+   * @return {T}
+   */
+  const from = Array.from;
+
+  /**
+   * True iff condition holds on some element in the Array.
+   *
+   * @function
+   * @template S
+   * @template {ArrayLike<S>} ARR
+   * @param {ARR} arr
+   * @param {function(S, number, ARR):boolean} f
+   * @return {boolean}
+   */
+  const some = (arr, f) => {
+    for (let i = 0; i < arr.length; i++) {
+      if (f(arr[i], i, arr)) {
+        return true
+      }
+    }
+    return false
+  };
+
+  /**
+   * @template T
+   * @param {number} len
+   * @param {function(number, Array<T>):T} f
+   * @return {Array<T>}
+   */
+  const unfold = (len, f) => {
+    const array = new Array(len);
+    for (let i = 0; i < len; i++) {
+      array[i] = f(i, array);
+    }
+    return array
+  };
+
+  const isArray = Array.isArray;
+
+  /**
    * Utility module to work with strings.
    *
    * @module string
@@ -172,6 +254,12 @@
   }
 
   /**
+   * @param {string} source
+   * @param {number} n
+   */
+  const repeat = (source, n) => unfold(n, () => source).join('');
+
+  /**
    * Often used conditions.
    *
    * @module conditions
@@ -241,77 +329,16 @@
   const varStorage = _localStorage;
 
   /**
-   * Utility module to work with sets.
-   *
-   * @module set
-   */
-
-  const create$5 = () => new Set();
-
-  /**
-   * Utility module to work with Arrays.
-   *
-   * @module array
-   */
-
-  /**
-   * Return the last element of an array. The element must exist
-   *
-   * @template L
-   * @param {ArrayLike<L>} arr
-   * @return {L}
-   */
-  const last = arr => arr[arr.length - 1];
-
-  /**
-   * Append elements from src to dest
-   *
-   * @template M
-   * @param {Array<M>} dest
-   * @param {Array<M>} src
-   */
-  const appendTo = (dest, src) => {
-    for (let i = 0; i < src.length; i++) {
-      dest.push(src[i]);
-    }
-  };
-
-  /**
-   * Transforms something array-like to an actual Array.
-   *
-   * @function
-   * @template T
-   * @param {ArrayLike<T>|Iterable<T>} arraylike
-   * @return {T}
-   */
-  const from = Array.from;
-
-  /**
-   * True iff condition holds on some element in the Array.
-   *
-   * @function
-   * @template S
-   * @template {ArrayLike<S>} ARR
-   * @param {ARR} arr
-   * @param {function(S, number, ARR):boolean} f
-   * @return {boolean}
-   */
-  const some = (arr, f) => {
-    for (let i = 0; i < arr.length; i++) {
-      if (f(arr[i], i, arr)) {
-        return true
-      }
-    }
-    return false
-  };
-
-  const isArray = Array.isArray;
-
-  /**
    * Utility functions for working with EcmaScript objects.
    *
    * @module object
    */
+
+
+  /**
+   * Object.assign
+   */
+  const assign = Object.assign;
 
   /**
    * @param {Object<string,any>} obj
@@ -352,6 +379,16 @@
   const length$1 = obj => keys(obj).length;
 
   /**
+   * @param {Object|undefined} obj
+   */
+  const isEmpty = obj => {
+    for (const _k in obj) {
+      return false
+    }
+    return true
+  };
+
+  /**
    * @param {Object<string,any>} obj
    * @param {function(any,string):boolean} f
    * @return {boolean}
@@ -387,6 +424,7 @@
    * @module function
    */
 
+
   /**
    * Calls all functions in `fs` with args. Only throws after all functions were called.
    *
@@ -406,6 +444,14 @@
   };
 
   /**
+   * @template A
+   *
+   * @param {A} a
+   * @return {A}
+   */
+  const id$1 = a => a;
+
+  /**
    * @template V
    * @template {V} OPTS
    *
@@ -414,13 +460,13 @@
    */
   // @ts-ignore
   const isOneOf = (value, options) => options.includes(value);
-  /* c8 ignore stop */
 
   /**
    * Isomorphic module to work access the environment (query params, env variables).
    *
    * @module map
    */
+
 
   /* c8 ignore next */
   // @ts-ignore
@@ -562,6 +608,7 @@
   const forEach = (arr, f) => arr.forEach(p => f(p.left, p.right));
 
   /* eslint-env browser */
+
 
   /* c8 ignore start */
   /**
@@ -785,6 +832,7 @@
    * @module metric
    */
 
+
   const prefixUp = ['', 'k', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y'];
   const prefixDown = ['', 'm', 'μ', 'n', 'p', 'f', 'a', 'z', 'y'];
 
@@ -818,6 +866,7 @@
    *
    * @module time
    */
+
 
   /**
    * Return current unix time.
@@ -886,6 +935,7 @@
    *
    * @module logging
    */
+
 
   /**
    * @type {Object<Symbol,pair.Pair<string,string>>}
@@ -1219,6 +1269,7 @@
    * @module diff
    */
 
+
   /**
    * A SimpleDiff describes a change on a String.
    *
@@ -1307,6 +1358,7 @@
   const BITS32 = 0xFFFFFFFF;
 
   /* eslint-env browser */
+
   const getRandomValues = crypto.getRandomValues.bind(crypto);
 
   const uint32$1 = () => getRandomValues(new Uint32Array(1))[0];
@@ -1320,6 +1372,7 @@
   /**
    * @module prng
    */
+
 
   /**
    * Xorshift32 is a very simple but elegang PRNG with a period of `2^32-1`.
@@ -1354,6 +1407,7 @@
   /**
    * @module prng
    */
+
 
   /**
    * This is a variant of xoroshiro128plus - the fastest full-period generator passing BigCrush without systematic failures.
@@ -1466,11 +1520,8 @@
    * @module number
    */
 
-  const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER;
 
-  /**
-   * @module number
-   */
+  const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER;
 
   /* c8 ignore next */
   const isInteger = Number.isInteger || (num => typeof num === 'number' && isFinite(num) && floor(num) === num);
@@ -1502,6 +1553,7 @@
    *
    * @module encoding
    */
+
 
   /**
    * A BinaryEncoder handles the encoding to an Uint8Array.
@@ -1690,7 +1742,7 @@
    * @param {String} str The string that is to be encoded.
    */
   /* c8 ignore next */
-  const writeVarString = (utf8TextEncoder && utf8TextEncoder.encodeInto) ? _writeVarStringNative : _writeVarStringPolyfill;
+  const writeVarString = (utf8TextEncoder && /** @type {any} */ (utf8TextEncoder).encodeInto) ? _writeVarStringNative : _writeVarStringPolyfill;
 
   /**
    * Write the content of another Encoder.
@@ -1865,7 +1917,7 @@
         if (data === null) {
           // TYPE 126: null
           write(encoder, 126);
-        } else if (data instanceof Array) {
+        } else if (isArray(data)) {
           // TYPE 117: Array
           write(encoder, 117);
           writeVarUint(encoder, data.length);
@@ -2169,6 +2221,7 @@
    *
    * @module decoding
    */
+
 
   const errorUnexpectedEndOfArray = create$2('Unexpected end of array');
   const errorIntegerOutOfRange = create$2('Integer out of Range');
@@ -2574,6 +2627,7 @@
    * @module buffer
    */
 
+
   /**
    * @param {number} len
    */
@@ -2635,6 +2689,7 @@
    *
    * @module prng
    */
+
 
   /**
    * Description of the function
@@ -2762,6 +2817,7 @@
    * @module statistics
    */
 
+
   /**
    * @param {Array<number>} arr Array of values
    * @return {number} Returns null if the array is empty
@@ -2780,6 +2836,7 @@
    * @module promise
    */
 
+
   /**
    * @template T
    * @callback PromiseResolve
@@ -2792,6 +2849,15 @@
    * @return {Promise<T>}
    */
   const create = f => /** @type {Promise<T>} */ (new Promise(f));
+
+  /**
+   * `Promise.all` wait for all promises in the array to resolve and return the result
+   * @template {unknown[] | []} PS
+   *
+   * @param {PS} ps
+   * @return {Promise<{ -readonly [P in keyof PS]: Awaited<PS[P]> }>}
+   */
+  Promise.all.bind(Promise);
 
   /**
    * @param {number} timeout
@@ -2860,6 +2926,7 @@
    *
    * @module testing
    */
+
 
   hasConf('extensive');
 
@@ -3315,6 +3382,7 @@
    * @module observable
    */
 
+
   /**
    * Handles named events.
    *
@@ -3723,6 +3791,7 @@
   /**
    * @module Y
    */
+
 
   const generateNewClientId = uint32$1;
 
@@ -5996,6 +6065,14 @@
   };
 
   /**
+   * @example
+   *  const ydoc = new Y.Doc({ gc: false })
+   *  ydoc.getText().insert(0, 'world!')
+   *  const snapshot = Y.snapshot(ydoc)
+   *  ydoc.getText().insert(0, 'hello ')
+   *  const restored = Y.createDocFromSnapshot(ydoc, snapshot)
+   *  assert(restored.getText().toString() === 'world!')
+   *
    * @param {Doc} originDoc
    * @param {Snapshot} snapshot
    * @param {Doc} [newDoc] Optionally, you may define the Yjs document that receives the data from originDoc
@@ -6004,7 +6081,7 @@
   const createDocFromSnapshot = (originDoc, snapshot, newDoc = new Doc()) => {
     if (originDoc.gc) {
       // we should not try to restore a GC-ed document, because some of the restored items might have their content deleted
-      throw new Error('originDoc must not be garbage collected')
+      throw new Error('Garbage-collection must be disabled in `originDoc`!')
     }
     const { sv, ds } = snapshot;
 
@@ -7566,17 +7643,17 @@
 
   /**
    * @param {Uint8Array} update
+   * @param {function(Item|GC|Skip):Item|GC|Skip} blockTransformer
    * @param {typeof UpdateDecoderV2 | typeof UpdateDecoderV1} YDecoder
    * @param {typeof UpdateEncoderV2 | typeof UpdateEncoderV1 } YEncoder
    */
-  const convertUpdateFormat = (update, YDecoder, YEncoder) => {
+  const convertUpdateFormat = (update, blockTransformer, YDecoder, YEncoder) => {
     const updateDecoder = new YDecoder(createDecoder(update));
     const lazyDecoder = new LazyStructReader(updateDecoder, false);
     const updateEncoder = new YEncoder();
     const lazyWriter = new LazyStructWriter(updateEncoder);
-
     for (let curr = lazyDecoder.curr; curr !== null; curr = lazyDecoder.next()) {
-      writeStructToLazyStructWriter(lazyWriter, curr, 0);
+      writeStructToLazyStructWriter(lazyWriter, blockTransformer(curr), 0);
     }
     finishLazyStructWriting(lazyWriter);
     const ds = readDeleteSet(updateDecoder);
@@ -7585,14 +7662,135 @@
   };
 
   /**
-   * @param {Uint8Array} update
+   * @typedef {Object} ObfuscatorOptions
+   * @property {boolean} [ObfuscatorOptions.formatting=true]
+   * @property {boolean} [ObfuscatorOptions.subdocs=true]
+   * @property {boolean} [ObfuscatorOptions.yxml=true] Whether to obfuscate nodeName / hookName
    */
-  const convertUpdateFormatV1ToV2 = update => convertUpdateFormat(update, UpdateDecoderV1, UpdateEncoderV2);
+
+  /**
+   * @param {ObfuscatorOptions} obfuscator
+   */
+  const createObfuscator = ({ formatting = true, subdocs = true, yxml = true } = {}) => {
+    let i = 0;
+    const mapKeyCache = create$6();
+    const nodeNameCache = create$6();
+    const formattingKeyCache = create$6();
+    const formattingValueCache = create$6();
+    formattingValueCache.set(null, null); // end of a formatting range should always be the end of a formatting range
+    /**
+     * @param {Item|GC|Skip} block
+     * @return {Item|GC|Skip}
+     */
+    return block => {
+      switch (block.constructor) {
+        case GC:
+        case Skip:
+          return block
+        case Item: {
+          const item = /** @type {Item} */ (block);
+          const content = item.content;
+          switch (content.constructor) {
+            case ContentDeleted:
+              break
+            case ContentType: {
+              if (yxml) {
+                const type = /** @type {ContentType} */ (content).type;
+                if (type instanceof YXmlElement) {
+                  type.nodeName = setIfUndefined(nodeNameCache, type.nodeName, () => 'node-' + i);
+                }
+                if (type instanceof YXmlHook) {
+                  type.hookName = setIfUndefined(nodeNameCache, type.hookName, () => 'hook-' + i);
+                }
+              }
+              break
+            }
+            case ContentAny: {
+              const c = /** @type {ContentAny} */ (content);
+              c.arr = c.arr.map(() => i);
+              break
+            }
+            case ContentBinary: {
+              const c = /** @type {ContentBinary} */ (content);
+              c.content = new Uint8Array([i]);
+              break
+            }
+            case ContentDoc: {
+              const c = /** @type {ContentDoc} */ (content);
+              if (subdocs) {
+                c.opts = {};
+                c.doc.guid = i + '';
+              }
+              break
+            }
+            case ContentEmbed: {
+              const c = /** @type {ContentEmbed} */ (content);
+              c.embed = {};
+              break
+            }
+            case ContentFormat: {
+              const c = /** @type {ContentFormat} */ (content);
+              if (formatting) {
+                c.key = setIfUndefined(formattingKeyCache, c.key, () => i + '');
+                c.value = setIfUndefined(formattingValueCache, c.value, () => ({ i }));
+              }
+              break
+            }
+            case ContentJSON: {
+              const c = /** @type {ContentJSON} */ (content);
+              c.arr = c.arr.map(() => i);
+              break
+            }
+            case ContentString: {
+              const c = /** @type {ContentString} */ (content);
+              c.str = repeat((i % 10) + '', c.str.length);
+              break
+            }
+            default:
+              // unknown content type
+              unexpectedCase();
+          }
+          if (item.parentSub) {
+            item.parentSub = setIfUndefined(mapKeyCache, item.parentSub, () => i + '');
+          }
+          i++;
+          return block
+        }
+        default:
+          // unknown block-type
+          unexpectedCase();
+      }
+    }
+  };
+
+  /**
+   * This function obfuscates the content of a Yjs update. This is useful to share
+   * buggy Yjs documents while significantly limiting the possibility that a
+   * developer can on the user. Note that it might still be possible to deduce
+   * some information by analyzing the "structure" of the document or by analyzing
+   * the typing behavior using the CRDT-related metadata that is still kept fully
+   * intact.
+   *
+   * @param {Uint8Array} update
+   * @param {ObfuscatorOptions} [opts]
+   */
+  const obfuscateUpdate = (update, opts) => convertUpdateFormat(update, createObfuscator(opts), UpdateDecoderV1, UpdateEncoderV1);
+
+  /**
+   * @param {Uint8Array} update
+   * @param {ObfuscatorOptions} [opts]
+   */
+  const obfuscateUpdateV2 = (update, opts) => convertUpdateFormat(update, createObfuscator(opts), UpdateDecoderV2, UpdateEncoderV2);
 
   /**
    * @param {Uint8Array} update
    */
-  const convertUpdateFormatV2ToV1 = update => convertUpdateFormat(update, UpdateDecoderV2, UpdateEncoderV1);
+  const convertUpdateFormatV1ToV2 = update => convertUpdateFormat(update, id$1, UpdateDecoderV1, UpdateEncoderV2);
+
+  /**
+   * @param {Uint8Array} update
+   */
+  const convertUpdateFormatV2ToV1 = update => convertUpdateFormat(update, id$1, UpdateDecoderV2, UpdateEncoderV1);
 
   /**
    * @template {AbstractType<any>} T
@@ -7857,6 +8055,7 @@
    *
    * @module iterator
    */
+
 
   /**
    * @template T
@@ -8791,6 +8990,7 @@
    * @module YArray
    */
 
+
   /**
    * Event that describes the changes on a YArray
    * @template T
@@ -9233,9 +9433,11 @@
 
     /**
      * Adds or updates an element with a specified key and value.
+     * @template {MapType} VAL
      *
      * @param {string} key The key of the element to add to this YMap
-     * @param {MapType} value The value of the element to add
+     * @param {VAL} value The value of the element to add
+     * @return {VAL}
      */
     set (key, value) {
       if (this.doc !== null) {
@@ -9894,36 +10096,39 @@
               /**
                * @type {any}
                */
-              let op;
+              let op = null;
               switch (action) {
                 case 'delete':
-                  op = { delete: deleteLen };
+                  if (deleteLen > 0) {
+                    op = { delete: deleteLen };
+                  }
                   deleteLen = 0;
                   break
                 case 'insert':
-                  op = { insert };
-                  if (currentAttributes.size > 0) {
-                    op.attributes = {};
-                    currentAttributes.forEach((value, key) => {
-                      if (value !== null) {
-                        op.attributes[key] = value;
-                      }
-                    });
+                  if (typeof insert === 'object' || insert.length > 0) {
+                    op = { insert };
+                    if (currentAttributes.size > 0) {
+                      op.attributes = {};
+                      currentAttributes.forEach((value, key) => {
+                        if (value !== null) {
+                          op.attributes[key] = value;
+                        }
+                      });
+                    }
                   }
                   insert = '';
                   break
                 case 'retain':
-                  op = { retain };
-                  if (Object.keys(attributes).length > 0) {
-                    op.attributes = {};
-                    for (const key in attributes) {
-                      op.attributes[key] = attributes[key];
+                  if (retain > 0) {
+                    op = { retain };
+                    if (!isEmpty(attributes)) {
+                      op.attributes = assign({}, attributes);
                     }
                   }
                   retain = 0;
                   break
               }
-              delta.push(op);
+              if (op) delta.push(op);
               action = null;
             }
           };
@@ -10543,6 +10748,7 @@
    * @module YXml
    */
 
+
   /**
    * Define the elements to which a set of CSS queries apply.
    * {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors|CSS_Selectors}
@@ -10957,11 +11163,17 @@
   const readYXmlFragment = _decoder => new YXmlFragment();
 
   /**
+   * @typedef {Object|number|null|Array<any>|string|Uint8Array|AbstractType<any>} ValueTypes
+   */
+
+  /**
    * An YXmlElement imitates the behavior of a
    * {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}.
    *
    * * An YXmlElement has attributes (key value pairs)
    * * An YXmlElement has childElements that must inherit from YXmlElement
+   *
+   * @template {{ [key: string]: ValueTypes }} [KV={ [key: string]: string }]
    */
   class YXmlElement extends YXmlFragment {
     constructor (nodeName = 'UNDEFINED') {
@@ -11017,14 +11229,19 @@
     }
 
     /**
-     * @return {YXmlElement}
+     * @return {YXmlElement<KV>}
      */
     clone () {
+      /**
+       * @type {YXmlElement<KV>}
+       */
       const el = new YXmlElement(this.nodeName);
       const attrs = this.getAttributes();
-      for (const key in attrs) {
-        el.setAttribute(key, attrs[key]);
-      }
+      forEach$1(attrs, (value, key) => {
+        if (typeof value === 'string') {
+          el.setAttribute(key, value);
+        }
+      });
       // @ts-ignore
       el.insert(0, this.toArray().map(item => item instanceof AbstractType ? item.clone() : item));
       return el
@@ -11060,7 +11277,7 @@
     /**
      * Removes an attribute from this YXmlElement.
      *
-     * @param {String} attributeName The attribute name that is to be removed.
+     * @param {string} attributeName The attribute name that is to be removed.
      *
      * @public
      */
@@ -11077,8 +11294,10 @@
     /**
      * Sets or updates an attribute.
      *
-     * @param {String} attributeName The attribute name that is to be set.
-     * @param {String} attributeValue The attribute value that is to be set.
+     * @template {keyof KV & string} KEY
+     *
+     * @param {KEY} attributeName The attribute name that is to be set.
+     * @param {KV[KEY]} attributeValue The attribute value that is to be set.
      *
      * @public
      */
@@ -11095,9 +11314,11 @@
     /**
      * Returns an attribute value that belongs to the attribute name.
      *
-     * @param {String} attributeName The attribute name that identifies the
+     * @template {keyof KV & string} KEY
+     *
+     * @param {KEY} attributeName The attribute name that identifies the
      *                               queried value.
-     * @return {String} The queried attribute value.
+     * @return {KV[KEY]|undefined} The queried attribute value.
      *
      * @public
      */
@@ -11108,7 +11329,7 @@
     /**
      * Returns whether an attribute exists
      *
-     * @param {String} attributeName The attribute name to check for existence.
+     * @param {string} attributeName The attribute name to check for existence.
      * @return {boolean} whether the attribute exists.
      *
      * @public
@@ -11120,12 +11341,12 @@
     /**
      * Returns all attribute name/value pairs in a JSON Object.
      *
-     * @return {Object<string, any>} A JSON Object that describes the attributes.
+     * @return {{ [Key in Extract<keyof KV,string>]?: KV[Key]}} A JSON Object that describes the attributes.
      *
      * @public
      */
     getAttributes () {
-      return typeMapGetAll(this)
+      return /** @type {any} */ (typeMapGetAll(this))
     }
 
     /**
@@ -11147,7 +11368,10 @@
       const dom = _document.createElement(this.nodeName);
       const attrs = this.getAttributes();
       for (const key in attrs) {
-        dom.setAttribute(key, attrs[key]);
+        const value = attrs[key];
+        if (typeof value === 'string') {
+          dom.setAttribute(key, value);
+        }
       }
       typeListForEach(this, yxml => {
         dom.appendChild(yxml.toDOM(_document, hooks, binding));
@@ -13262,6 +13486,7 @@
 
   /** eslint-env browser */
 
+
   const glo = /** @type {any} */ (typeof globalThis !== 'undefined'
     ? globalThis
     : typeof window !== 'undefined'
@@ -13372,6 +13597,8 @@
     logUpdateV2: logUpdateV2,
     mergeUpdates: mergeUpdates,
     mergeUpdatesV2: mergeUpdatesV2,
+    obfuscateUpdate: obfuscateUpdate,
+    obfuscateUpdateV2: obfuscateUpdateV2,
     parseUpdateMeta: parseUpdateMeta,
     parseUpdateMetaV2: parseUpdateMetaV2,
     readUpdate: readUpdate$1,
@@ -13387,6 +13614,7 @@
   /**
    * @module sync-protocol
    */
+
 
   /**
    * @typedef {Map<number, number>} StateMap
@@ -14067,6 +14295,8 @@
     logUpdateV2: logUpdateV2,
     mergeUpdates: mergeUpdates,
     mergeUpdatesV2: mergeUpdatesV2,
+    obfuscateUpdate: obfuscateUpdate,
+    obfuscateUpdateV2: obfuscateUpdateV2,
     parseUpdateMeta: parseUpdateMeta,
     parseUpdateMetaV2: parseUpdateMetaV2,
     readUpdate: readUpdate$1,
@@ -18101,6 +18331,33 @@
     testTypesAsEmbed: testTypesAsEmbed
   });
 
+  const testCustomTypings = () => {
+    const ydoc = new Doc();
+    const ymap = ydoc.getMap();
+    /**
+     * @type {Y.XmlElement<{ num: number, str: string, [k:string]: object|number|string }>}
+     */
+    const yxml = ymap.set('yxml', new YXmlElement('test'));
+    /**
+     * @type {number|undefined}
+     */
+    const num = yxml.getAttribute('num');
+    /**
+     * @type {string|undefined}
+     */
+    const str = yxml.getAttribute('str');
+    /**
+     * @type {object|number|string|undefined}
+     */
+    const dtrn = yxml.getAttribute('dtrn');
+    const attrs = yxml.getAttributes();
+    /**
+     * @type {object|number|string|undefined}
+     */
+    const any = attrs.shouldBeAny;
+    console.log({ num, str, dtrn, attrs, any });
+  };
+
   /**
    * @param {t.TestCase} tc
    */
@@ -18190,9 +18447,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testYtextAttributes = tc => {
+  const testYtextAttributes = _tc => {
     const ydoc = new Doc();
     const ytext = /** @type {Y.XmlText} */ (ydoc.get('', YXmlText));
     ytext.observe(event => {
@@ -18204,9 +18461,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testSiblings = tc => {
+  const testSiblings = _tc => {
     const ydoc = new Doc();
     const yxml = ydoc.getXmlFragment();
     const first = new YXmlText();
@@ -18220,9 +18477,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testInsertafter = tc => {
+  const testInsertafter = _tc => {
     const ydoc = new Doc();
     const yxml = ydoc.getXmlFragment();
     const first = new YXmlText();
@@ -18250,9 +18507,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testClone = tc => {
+  const testClone = _tc => {
     const ydoc = new Doc();
     const yxml = ydoc.getXmlFragment();
     const first = new YXmlText('text');
@@ -18268,9 +18525,9 @@
   };
 
   /**
-   * @param {t.TestCase} tc
+   * @param {t.TestCase} _tc
    */
-  const testFormattingBug = tc => {
+  const testFormattingBug = _tc => {
     const ydoc = new Doc();
     const yxml = /** @type {Y.XmlText} */ (ydoc.get('', YXmlText));
     const delta = [
@@ -18285,6 +18542,7 @@
   var xml = /*#__PURE__*/Object.freeze({
     __proto__: null,
     testClone: testClone,
+    testCustomTypings: testCustomTypings,
     testEvents: testEvents,
     testFormattingBug: testFormattingBug,
     testHasProperty: testHasProperty,
@@ -19475,6 +19733,18 @@
   /**
    * @param {t.TestCase} tc
    */
+  const testBasic = tc => {
+    const ydoc = new Doc({ gc: false });
+    ydoc.getText().insert(0, 'world!');
+    const snapshot = snapshot$1(ydoc);
+    ydoc.getText().insert(0, 'hello ');
+    const restored = createDocFromSnapshot(ydoc, snapshot);
+    assert(restored.getText().toString() === 'world!');
+  };
+
+  /**
+   * @param {t.TestCase} tc
+   */
   const testBasicRestoreSnapshot = tc => {
     const doc = new Doc({ gc: false });
     doc.getArray('array').insert(0, ['hello']);
@@ -19642,6 +19912,7 @@
 
   var snapshot = /*#__PURE__*/Object.freeze({
     __proto__: null,
+    testBasic: testBasic,
     testBasicRestoreSnapshot: testBasicRestoreSnapshot,
     testDeletedItems2: testDeletedItems2,
     testDeletedItemsBase: testDeletedItemsBase,
@@ -19785,7 +20056,6 @@
    */
   const checkUpdateCases = (ydoc, updates, enc, hasDeletes) => {
     const cases = [];
-
     // Case 1: Simple case, simply merge everything
     cases.push(enc.mergeUpdates(updates));
 
@@ -19952,13 +20222,65 @@
     compareStrings(yText5.toString(), 'nenor');
   };
 
+  /**
+   * @param {t.TestCase} tc
+   */
+  const testObfuscateUpdates = tc => {
+    const ydoc = new Doc();
+    const ytext = ydoc.getText('text');
+    const ymap = ydoc.getMap('map');
+    const yarray = ydoc.getArray('array');
+    // test ytext
+    ytext.applyDelta([{ insert: 'text', attributes: { bold: true } }, { insert: { href: 'supersecreturl' } }]);
+    // test ymap
+    ymap.set('key', 'secret1');
+    ymap.set('key', 'secret2');
+    // test yarray with subtype & subdoc
+    const subtype = new YXmlElement('secretnodename');
+    const subdoc = new Doc({ guid: 'secret' });
+    subtype.setAttribute('attr', 'val');
+    yarray.insert(0, ['teststring', 42, subtype, subdoc]);
+    // obfuscate the content and put it into a new document
+    const obfuscatedUpdate = obfuscateUpdate(encodeStateAsUpdate(ydoc));
+    const odoc = new Doc();
+    applyUpdate(odoc, obfuscatedUpdate);
+    const otext = odoc.getText('text');
+    const omap = odoc.getMap('map');
+    const oarray = odoc.getArray('array');
+    // test ytext
+    const delta = otext.toDelta();
+    assert(delta.length === 2);
+    assert(delta[0].insert !== 'text' && delta[0].insert.length === 4);
+    assert(length$1(delta[0].attributes) === 1);
+    assert(!hasProperty(delta[0].attributes, 'bold'));
+    assert(length$1(delta[1]) === 1);
+    assert(hasProperty(delta[1], 'insert'));
+    // test ymap
+    assert(omap.size === 1);
+    assert(!omap.has('key'));
+    // test yarray with subtype & subdoc
+    const result = oarray.toArray();
+    assert(result.length === 4);
+    assert(result[0] !== 'teststring');
+    assert(result[1] !== 42);
+    const osubtype = /** @type {Y.XmlElement} */ (result[2]);
+    const osubdoc = result[3];
+    // test subtype
+    assert(osubtype.nodeName !== subtype.nodeName);
+    assert(length$1(osubtype.getAttributes()) === 1);
+    assert(osubtype.getAttribute('attr') === undefined);
+    // test subdoc
+    assert(osubdoc.guid !== subdoc.guid);
+  };
+
   var updates = /*#__PURE__*/Object.freeze({
     __proto__: null,
     testKeyEncoding: testKeyEncoding,
     testMergePendingUpdates: testMergePendingUpdates,
     testMergeUpdates: testMergeUpdates,
     testMergeUpdates1: testMergeUpdates1,
-    testMergeUpdates2: testMergeUpdates2
+    testMergeUpdates2: testMergeUpdates2,
+    testObfuscateUpdates: testObfuscateUpdates
   });
 
   /**
@@ -20074,6 +20396,7 @@
   });
 
   /* eslint-env node */
+
 
   if (isBrowser) {
     createVConsole(document.body);

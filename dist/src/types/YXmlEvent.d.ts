@@ -2,7 +2,9 @@
  * @extends YEvent<YXmlElement|YXmlText|YXmlFragment>
  * An Event that describes changes on a YXml Element or Yxml Fragment
  */
-export class YXmlEvent extends YEvent<YXmlFragment | YXmlElement | YXmlText> {
+export class YXmlEvent extends YEvent<YXmlFragment | YXmlElement<{
+    [key: string]: string;
+}> | YXmlText> {
     /**
      * @param {YXmlElement|YXmlText|YXmlFragment} target The target on which the event is created.
      * @param {Set<string|null>} subs The set of changed attributes. `null` is included if the

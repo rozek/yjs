@@ -95,11 +95,13 @@ export class YMap<MapType> extends AbstractType<YMapEvent<MapType>> implements I
     delete(key: string): void;
     /**
      * Adds or updates an element with a specified key and value.
+     * @template {MapType} VAL
      *
      * @param {string} key The key of the element to add to this YMap
-     * @param {MapType} value The value of the element to add
+     * @param {VAL} value The value of the element to add
+     * @return {VAL}
      */
-    set(key: string, value: MapType): MapType;
+    set<VAL extends MapType>(key: string, value: VAL): VAL;
     /**
      * Returns a specified element from this YMap.
      *

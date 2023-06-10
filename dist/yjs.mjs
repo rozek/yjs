@@ -14,6 +14,7 @@ import { callAll } from 'lib0/function';
 import * as set from 'lib0/set';
 import * as logging from 'lib0/logging';
 import * as time from 'lib0/time';
+import * as string from 'lib0/string';
 import * as iterator from 'lib0/iterator';
 import * as object from 'lib0/object';
 
@@ -355,6 +356,7 @@ const readAndApplyDeleteSet = (decoder, transaction, store) => {
 /**
  * @module Y
  */
+
 
 const generateNewClientId = random.uint32;
 
@@ -2628,6 +2630,14 @@ const splitSnapshotAffectedStructs = (transaction, snapshot) => {
 };
 
 /**
+ * @example
+ *  const ydoc = new Y.Doc({ gc: false })
+ *  ydoc.getText().insert(0, 'world!')
+ *  const snapshot = Y.snapshot(ydoc)
+ *  ydoc.getText().insert(0, 'hello ')
+ *  const restored = Y.createDocFromSnapshot(ydoc, snapshot)
+ *  assert(restored.getText().toString() === 'world!')
+ *
  * @param {Doc} originDoc
  * @param {Snapshot} snapshot
  * @param {Doc} [newDoc] Optionally, you may define the Yjs document that receives the data from originDoc
@@ -2636,7 +2646,7 @@ const splitSnapshotAffectedStructs = (transaction, snapshot) => {
 const createDocFromSnapshot = (originDoc, snapshot, newDoc = new Doc()) => {
   if (originDoc.gc) {
     // we should not try to restore a GC-ed document, because some of the restored items might have their content deleted
-    throw new Error('originDoc must not be garbage collected')
+    throw new Error('Garbage-collection must be disabled in `originDoc`!')
   }
   const { sv, ds } = snapshot;
 
@@ -4198,17 +4208,17 @@ const finishLazyStructWriting = (lazyWriter) => {
 
 /**
  * @param {Uint8Array} update
+ * @param {function(Item|GC|Skip):Item|GC|Skip} blockTransformer
  * @param {typeof UpdateDecoderV2 | typeof UpdateDecoderV1} YDecoder
  * @param {typeof UpdateEncoderV2 | typeof UpdateEncoderV1 } YEncoder
  */
-const convertUpdateFormat = (update, YDecoder, YEncoder) => {
+const convertUpdateFormat = (update, blockTransformer, YDecoder, YEncoder) => {
   const updateDecoder = new YDecoder(decoding.createDecoder(update));
   const lazyDecoder = new LazyStructReader(updateDecoder, false);
   const updateEncoder = new YEncoder();
   const lazyWriter = new LazyStructWriter(updateEncoder);
-
   for (let curr = lazyDecoder.curr; curr !== null; curr = lazyDecoder.next()) {
-    writeStructToLazyStructWriter(lazyWriter, curr, 0);
+    writeStructToLazyStructWriter(lazyWriter, blockTransformer(curr), 0);
   }
   finishLazyStructWriting(lazyWriter);
   const ds = readDeleteSet(updateDecoder);
@@ -4217,14 +4227,135 @@ const convertUpdateFormat = (update, YDecoder, YEncoder) => {
 };
 
 /**
- * @param {Uint8Array} update
+ * @typedef {Object} ObfuscatorOptions
+ * @property {boolean} [ObfuscatorOptions.formatting=true]
+ * @property {boolean} [ObfuscatorOptions.subdocs=true]
+ * @property {boolean} [ObfuscatorOptions.yxml=true] Whether to obfuscate nodeName / hookName
  */
-const convertUpdateFormatV1ToV2 = update => convertUpdateFormat(update, UpdateDecoderV1, UpdateEncoderV2);
+
+/**
+ * @param {ObfuscatorOptions} obfuscator
+ */
+const createObfuscator = ({ formatting = true, subdocs = true, yxml = true } = {}) => {
+  let i = 0;
+  const mapKeyCache = map.create();
+  const nodeNameCache = map.create();
+  const formattingKeyCache = map.create();
+  const formattingValueCache = map.create();
+  formattingValueCache.set(null, null); // end of a formatting range should always be the end of a formatting range
+  /**
+   * @param {Item|GC|Skip} block
+   * @return {Item|GC|Skip}
+   */
+  return block => {
+    switch (block.constructor) {
+      case GC:
+      case Skip:
+        return block
+      case Item: {
+        const item = /** @type {Item} */ (block);
+        const content = item.content;
+        switch (content.constructor) {
+          case ContentDeleted:
+            break
+          case ContentType: {
+            if (yxml) {
+              const type = /** @type {ContentType} */ (content).type;
+              if (type instanceof YXmlElement) {
+                type.nodeName = map.setIfUndefined(nodeNameCache, type.nodeName, () => 'node-' + i);
+              }
+              if (type instanceof YXmlHook) {
+                type.hookName = map.setIfUndefined(nodeNameCache, type.hookName, () => 'hook-' + i);
+              }
+            }
+            break
+          }
+          case ContentAny: {
+            const c = /** @type {ContentAny} */ (content);
+            c.arr = c.arr.map(() => i);
+            break
+          }
+          case ContentBinary: {
+            const c = /** @type {ContentBinary} */ (content);
+            c.content = new Uint8Array([i]);
+            break
+          }
+          case ContentDoc: {
+            const c = /** @type {ContentDoc} */ (content);
+            if (subdocs) {
+              c.opts = {};
+              c.doc.guid = i + '';
+            }
+            break
+          }
+          case ContentEmbed: {
+            const c = /** @type {ContentEmbed} */ (content);
+            c.embed = {};
+            break
+          }
+          case ContentFormat: {
+            const c = /** @type {ContentFormat} */ (content);
+            if (formatting) {
+              c.key = map.setIfUndefined(formattingKeyCache, c.key, () => i + '');
+              c.value = map.setIfUndefined(formattingValueCache, c.value, () => ({ i }));
+            }
+            break
+          }
+          case ContentJSON: {
+            const c = /** @type {ContentJSON} */ (content);
+            c.arr = c.arr.map(() => i);
+            break
+          }
+          case ContentString: {
+            const c = /** @type {ContentString} */ (content);
+            c.str = string.repeat((i % 10) + '', c.str.length);
+            break
+          }
+          default:
+            // unknown content type
+            error.unexpectedCase();
+        }
+        if (item.parentSub) {
+          item.parentSub = map.setIfUndefined(mapKeyCache, item.parentSub, () => i + '');
+        }
+        i++;
+        return block
+      }
+      default:
+        // unknown block-type
+        error.unexpectedCase();
+    }
+  }
+};
+
+/**
+ * This function obfuscates the content of a Yjs update. This is useful to share
+ * buggy Yjs documents while significantly limiting the possibility that a
+ * developer can on the user. Note that it might still be possible to deduce
+ * some information by analyzing the "structure" of the document or by analyzing
+ * the typing behavior using the CRDT-related metadata that is still kept fully
+ * intact.
+ *
+ * @param {Uint8Array} update
+ * @param {ObfuscatorOptions} [opts]
+ */
+const obfuscateUpdate = (update, opts) => convertUpdateFormat(update, createObfuscator(opts), UpdateDecoderV1, UpdateEncoderV1);
+
+/**
+ * @param {Uint8Array} update
+ * @param {ObfuscatorOptions} [opts]
+ */
+const obfuscateUpdateV2 = (update, opts) => convertUpdateFormat(update, createObfuscator(opts), UpdateDecoderV2, UpdateEncoderV2);
 
 /**
  * @param {Uint8Array} update
  */
-const convertUpdateFormatV2ToV1 = update => convertUpdateFormat(update, UpdateDecoderV2, UpdateEncoderV1);
+const convertUpdateFormatV1ToV2 = update => convertUpdateFormat(update, f.id, UpdateDecoderV1, UpdateEncoderV2);
+
+/**
+ * @param {Uint8Array} update
+ */
+const convertUpdateFormatV2ToV1 = update => convertUpdateFormat(update, f.id, UpdateDecoderV2, UpdateEncoderV1);
 
 /**
  * @template {AbstractType<any>} T
@@ -5378,6 +5509,7 @@ const createMapIterator = map => iterator.iteratorFilter(map.entries(), /** @par
  * @module YArray
  */
 
+
 /**
  * Event that describes the changes on a YArray
  * @template T
@@ -5820,9 +5952,11 @@ class YMap extends AbstractType {
 
   /**
    * Adds or updates an element with a specified key and value.
+   * @template {MapType} VAL
    *
    * @param {string} key The key of the element to add to this YMap
-   * @param {MapType} value The value of the element to add
+   * @param {VAL} value The value of the element to add
+   * @return {VAL}
    */
   set (key, value) {
     if (this.doc !== null) {
@@ -6481,36 +6615,39 @@ class YTextEvent extends YEvent {
             /**
              * @type {any}
              */
-            let op;
+            let op = null;
             switch (action) {
               case 'delete':
-                op = { delete: deleteLen };
+                if (deleteLen > 0) {
+                  op = { delete: deleteLen };
+                }
                 deleteLen = 0;
                 break
               case 'insert':
-                op = { insert };
-                if (currentAttributes.size > 0) {
-                  op.attributes = {};
-                  currentAttributes.forEach((value, key) => {
-                    if (value !== null) {
-                      op.attributes[key] = value;
-                    }
-                  });
+                if (typeof insert === 'object' || insert.length > 0) {
+                  op = { insert };
+                  if (currentAttributes.size > 0) {
+                    op.attributes = {};
+                    currentAttributes.forEach((value, key) => {
+                      if (value !== null) {
+                        op.attributes[key] = value;
+                      }
+                    });
+                  }
                 }
                 insert = '';
                 break
               case 'retain':
-                op = { retain };
-                if (Object.keys(attributes).length > 0) {
-                  op.attributes = {};
-                  for (const key in attributes) {
-                    op.attributes[key] = attributes[key];
+                if (retain > 0) {
+                  op = { retain };
+                  if (!object.isEmpty(attributes)) {
+                    op.attributes = object.assign({}, attributes);
                   }
                 }
                 retain = 0;
                 break
             }
-            delta.push(op);
+            if (op) delta.push(op);
             action = null;
           }
         };
@@ -7130,6 +7267,7 @@ const readYText = _decoder => new YText();
  * @module YXml
  */
 
+
 /**
  * Define the elements to which a set of CSS queries apply.
  * {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors|CSS_Selectors}
@@ -7544,11 +7682,17 @@ class YXmlFragment extends AbstractType {
 const readYXmlFragment = _decoder => new YXmlFragment();
 
 /**
+ * @typedef {Object|number|null|Array<any>|string|Uint8Array|AbstractType<any>} ValueTypes
+ */
+
+/**
  * An YXmlElement imitates the behavior of a
  * {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}.
  *
  * * An YXmlElement has attributes (key value pairs)
  * * An YXmlElement has childElements that must inherit from YXmlElement
+ *
+ * @template {{ [key: string]: ValueTypes }} [KV={ [key: string]: string }]
  */
 class YXmlElement extends YXmlFragment {
   constructor (nodeName = 'UNDEFINED') {
@@ -7604,14 +7748,19 @@ class YXmlElement extends YXmlFragment {
   }
 
   /**
-   * @return {YXmlElement}
+   * @return {YXmlElement<KV>}
    */
   clone () {
+    /**
+     * @type {YXmlElement<KV>}
+     */
     const el = new YXmlElement(this.nodeName);
     const attrs = this.getAttributes();
-    for (const key in attrs) {
-      el.setAttribute(key, attrs[key]);
-    }
+    object.forEach(attrs, (value, key) => {
+      if (typeof value === 'string') {
+        el.setAttribute(key, value);
+      }
+    });
     // @ts-ignore
     el.insert(0, this.toArray().map(item => item instanceof AbstractType ? item.clone() : item));
     return el
@@ -7647,7 +7796,7 @@ class YXmlElement extends YXmlFragment {
   /**
    * Removes an attribute from this YXmlElement.
    *
-   * @param {String} attributeName The attribute name that is to be removed.
+   * @param {string} attributeName The attribute name that is to be removed.
    *
    * @public
    */
@@ -7664,8 +7813,10 @@ class YXmlElement extends YXmlFragment {
   /**
    * Sets or updates an attribute.
    *
-   * @param {String} attributeName The attribute name that is to be set.
-   * @param {String} attributeValue The attribute value that is to be set.
+   * @template {keyof KV & string} KEY
+   *
+   * @param {KEY} attributeName The attribute name that is to be set.
+   * @param {KV[KEY]} attributeValue The attribute value that is to be set.
    *
    * @public
    */
@@ -7682,9 +7833,11 @@ class YXmlElement extends YXmlFragment {
   /**
    * Returns an attribute value that belongs to the attribute name.
    *
-   * @param {String} attributeName The attribute name that identifies the
+   * @template {keyof KV & string} KEY
+   *
+   * @param {KEY} attributeName The attribute name that identifies the
    *                               queried value.
-   * @return {String} The queried attribute value.
+   * @return {KV[KEY]|undefined} The queried attribute value.
    *
    * @public
    */
@@ -7695,7 +7848,7 @@ class YXmlElement extends YXmlFragment {
   /**
    * Returns whether an attribute exists
    *
-   * @param {String} attributeName The attribute name to check for existence.
+   * @param {string} attributeName The attribute name to check for existence.
    * @return {boolean} whether the attribute exists.
    *
    * @public
@@ -7707,12 +7860,12 @@ class YXmlElement extends YXmlFragment {
   /**
    * Returns all attribute name/value pairs in a JSON Object.
    *
-   * @return {Object<string, any>} A JSON Object that describes the attributes.
+   * @return {{ [Key in Extract<keyof KV,string>]?: KV[Key]}} A JSON Object that describes the attributes.
    *
    * @public
    */
   getAttributes () {
-    return typeMapGetAll(this)
+    return /** @type {any} */ (typeMapGetAll(this))
   }
 
   /**
@@ -7734,7 +7887,10 @@ class YXmlElement extends YXmlFragment {
     const dom = _document.createElement(this.nodeName);
     const attrs = this.getAttributes();
     for (const key in attrs) {
-      dom.setAttribute(key, attrs[key]);
+      const value = attrs[key];
+      if (typeof value === 'string') {
+        dom.setAttribute(key, value);
+      }
     }
     typeListForEach(this, yxml => {
       dom.appendChild(yxml.toDOM(_document, hooks, binding));
@@ -9849,6 +10005,7 @@ class Skip extends AbstractStruct {
 
 /** eslint-env browser */
 
+
 const glo = /** @type {any} */ (typeof globalThis !== 'undefined'
   ? globalThis
   : typeof window !== 'undefined'
@@ -9877,5 +10034,5 @@ if (glo[importIdentifier] === true) {
 }
 glo[importIdentifier] = true;
 
-export { AbsolutePosition, AbstractConnector, AbstractStruct, AbstractType, YArray as Array, ContentAny, ContentBinary, ContentDeleted, ContentEmbed, ContentFormat, ContentJSON, ContentString, ContentType, Doc, GC, ID, Item, YMap as Map, PermanentUserData, RelativePosition, Snapshot, YText as Text, Transaction, UndoManager, UpdateEncoderV1, YXmlElement as XmlElement, YXmlFragment as XmlFragment, YXmlHook as XmlHook, YXmlText as XmlText, YArrayEvent, YEvent, YMapEvent, YTextEvent, YXmlEvent, applyUpdate, applyUpdateV2, cleanupYTextFormatting, compareIDs, compareRelativePositions, convertUpdateFormatV1ToV2, convertUpdateFormatV2ToV1, createAbsolutePositionFromRelativePosition, createDeleteSet, createDeleteSetFromStructStore, createDocFromSnapshot, createID, createRelativePositionFromJSON, createRelativePositionFromTypeIndex, createSnapshot, decodeRelativePosition, decodeSnapshot, decodeSnapshotV2, decodeStateVector, decodeUpdate, decodeUpdateV2, diffUpdate, diffUpdateV2, emptySnapshot, encodeRelativePosition, encodeSnapshot, encodeSnapshotV2, encodeStateAsUpdate, encodeStateAsUpdateV2, encodeStateVector, encodeStateVectorFromUpdate, encodeStateVectorFromUpdateV2, equalSnapshots, findIndexSS, findRootTypeKey, getItem, getState, getTypeChildren, isDeleted, isParentOf, iterateDeletedStructs, logType, logUpdate, logUpdateV2, mergeUpdates, mergeUpdatesV2, parseUpdateMeta, parseUpdateMetaV2, readUpdate, readUpdateV2, relativePositionToJSON, snapshot, transact, tryGc, typeListToArraySnapshot, typeMapGetSnapshot };
+export { AbsolutePosition, AbstractConnector, AbstractStruct, AbstractType, YArray as Array, ContentAny, ContentBinary, ContentDeleted, ContentEmbed, ContentFormat, ContentJSON, ContentString, ContentType, Doc, GC, ID, Item, YMap as Map, PermanentUserData, RelativePosition, Snapshot, YText as Text, Transaction, UndoManager, UpdateEncoderV1, YXmlElement as XmlElement, YXmlFragment as XmlFragment, YXmlHook as XmlHook, YXmlText as XmlText, YArrayEvent, YEvent, YMapEvent, YTextEvent, YXmlEvent, applyUpdate, applyUpdateV2, cleanupYTextFormatting, compareIDs, compareRelativePositions, convertUpdateFormatV1ToV2, convertUpdateFormatV2ToV1, createAbsolutePositionFromRelativePosition, createDeleteSet, createDeleteSetFromStructStore, createDocFromSnapshot, createID, createRelativePositionFromJSON, createRelativePositionFromTypeIndex, createSnapshot, decodeRelativePosition, decodeSnapshot, decodeSnapshotV2, decodeStateVector, decodeUpdate, decodeUpdateV2, diffUpdate, diffUpdateV2, emptySnapshot, encodeRelativePosition, encodeSnapshot, encodeSnapshotV2, encodeStateAsUpdate, encodeStateAsUpdateV2, encodeStateVector, encodeStateVectorFromUpdate, encodeStateVectorFromUpdateV2, equalSnapshots, findIndexSS, findRootTypeKey, getItem, getState, getTypeChildren, isDeleted, isParentOf, iterateDeletedStructs, logType, logUpdate, logUpdateV2, mergeUpdates, mergeUpdatesV2, obfuscateUpdate, obfuscateUpdateV2, parseUpdateMeta, parseUpdateMetaV2, readUpdate, readUpdateV2, relativePositionToJSON, snapshot, transact, tryGc, typeListToArraySnapshot, typeMapGetSnapshot };
 //# sourceMappingURL=yjs.mjs.map

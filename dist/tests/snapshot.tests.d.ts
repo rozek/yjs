@@ -1,3 +1,4 @@
+export function testBasic(tc: t.TestCase): void;
 export function testBasicRestoreSnapshot(tc: t.TestCase): void;
 export function testEmptyRestoreSnapshot(tc: t.TestCase): void;
 export function testRestoreSnapshotWithSubType(tc: t.TestCase): void;
