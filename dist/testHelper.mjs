@@ -355,8 +355,9 @@ const compare = users => {
       return true
     });
     t.compare(Y.encodeStateVector(users[i]), Y.encodeStateVector(users[i + 1]));
-    compareDS(Y.createDeleteSetFromStructStore(users[i].store), Y.createDeleteSetFromStructStore(users[i + 1].store));
+    Y.equalDeleteSets(Y.createDeleteSetFromStructStore(users[i].store), Y.createDeleteSetFromStructStore(users[i + 1].store));
     compareStructStores(users[i].store, users[i + 1].store);
+    t.compare(Y.encodeSnapshot(Y.snapshot(users[i])), Y.encodeSnapshot(Y.snapshot(users[i + 1])));
   }
   users.map(u => u.destroy());
 };
@@ -412,25 +413,6 @@ const compareStructStores = (ss1, ss2) => {
 };
 
 /**
- * @param {import('../src/internals.js').DeleteSet} ds1
- * @param {import('../src/internals.js').DeleteSet} ds2
- */
-const compareDS = (ds1, ds2) => {
-  t.assert(ds1.clients.size === ds2.clients.size);
-  ds1.clients.forEach((deleteItems1, client) => {
-    const deleteItems2 = /** @type {Array<import('../src/internals.js').DeleteItem>} */ (ds2.clients.get(client));
-    t.assert(deleteItems2 !== undefined && deleteItems1.length === deleteItems2.length);
-    for (let i = 0; i < deleteItems1.length; i++) {
-      const di1 = deleteItems1[i];
-      const di2 = deleteItems2[i];
-      if (di1.clock !== di2.clock || di1.len !== di2.len) {
-        t.fail('DeleteSets dont match');
-      }
-    }
-  });
-};
-
-/**
  * @template T
  * @callback InitTestObjectCallback
  * @param {TestYInstance} y
@@ -471,5 +453,5 @@ const applyRandomTests = (tc, mods, iterations, initTestObject) => {
   return result
 };
 
-export { TestConnector, TestYInstance, applyRandomTests, compare, compareDS, compareItemIDs, compareStructStores, enc, encV1, encV2, init, useV2 };
+export { TestConnector, TestYInstance, applyRandomTests, compare, compareItemIDs, compareStructStores, enc, encV1, encV2, init, useV2 };
 //# sourceMappingURL=testHelper.mjs.map

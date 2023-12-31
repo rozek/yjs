@@ -25,6 +25,8 @@ export function snapshot(doc: Doc): Snapshot;
 export function isVisible(item: Item, snapshot: Snapshot | undefined): boolean;
 export function splitSnapshotAffectedStructs(transaction: Transaction, snapshot: Snapshot): void;
 export function createDocFromSnapshot(originDoc: Doc, snapshot: Snapshot, newDoc?: Doc | undefined): Doc;
+export function snapshotContainsUpdateV2(snapshot: Snapshot, update: Uint8Array, YDecoder?: typeof UpdateDecoderV1 | typeof UpdateDecoderV2 | undefined): boolean;
+export function snapshotContainsUpdate(snapshot: Snapshot, update: Uint8Array): boolean;
 import { DeleteSet } from "./DeleteSet.js";
 import { DSEncoderV1 } from "./UpdateEncoder.js";
 import { DSEncoderV2 } from "./UpdateEncoder.js";
@@ -33,4 +35,6 @@ import { DSDecoderV2 } from "./UpdateDecoder.js";
 import { Doc } from "./Doc.js";
 import { Item } from "../structs/Item.js";
 import { Transaction } from "./Transaction.js";
+import { UpdateDecoderV1 } from "./UpdateDecoder.js";
+import { UpdateDecoderV2 } from "./UpdateDecoder.js";
 //# sourceMappingURL=Snapshot.d.ts.map

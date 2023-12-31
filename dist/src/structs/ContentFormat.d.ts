@@ -26,20 +26,20 @@ export class ContentFormat {
      */
     copy(): ContentFormat;
     /**
-     * @param {number} offset
+     * @param {number} _offset
      * @return {ContentFormat}
      */
-    splice(offset: number): ContentFormat;
+    splice(_offset: number): ContentFormat;
     /**
-     * @param {ContentFormat} right
+     * @param {ContentFormat} _right
      * @return {boolean}
      */
-    mergeWith(right: ContentFormat): boolean;
+    mergeWith(_right: ContentFormat): boolean;
     /**
-     * @param {Transaction} transaction
+     * @param {Transaction} _transaction
      * @param {Item} item
      */
-    integrate(transaction: Transaction, item: Item): void;
+    integrate(_transaction: Transaction, item: Item): void;
     /**
      * @param {Transaction} transaction
      */

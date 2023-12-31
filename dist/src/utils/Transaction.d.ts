@@ -92,6 +92,10 @@ export class Transaction {
      * @type {Set<Doc>}
      */
     subdocsLoaded: Set<Doc>;
+    /**
+     * @type {boolean}
+     */
+    _needFormattingCleanup: boolean;
 }
 export function writeUpdateMessageFromTransaction(encoder: UpdateEncoderV1 | UpdateEncoderV2, transaction: Transaction): boolean;
 export function nextID(transaction: Transaction): import("./ID.js").ID;

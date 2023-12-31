@@ -47,6 +47,10 @@ export class YEvent<T extends AbstractType<any>> {
         } | undefined;
     }[] | null;
     /**
+     * @type {Array<string|number>|null}
+     */
+    _path: Array<string | number> | null;
+    /**
      * Computes the path from `y` to the changed type.
      *
      * @todo v14 should standardize on path: Array<{parent, index}> because that is easier to work with.

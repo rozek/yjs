@@ -1,3 +1,5 @@
+export function testIterators(_tc: t.TestCase): void;
+export function testMapEventError(_tc: t.TestCase): void;
 export function testMapHavingIterableAsConstructorParamTests(tc: t.TestCase): void;
 export function testBasicMapTests(tc: t.TestCase): void;
 export function testGetAndSetOfMapProperty(tc: t.TestCase): void;
@@ -13,6 +15,7 @@ export function testGetAndSetOfMapPropertyWithThreeConflicts(tc: t.TestCase): vo
 export function testGetAndSetAndDeleteOfMapPropertyWithThreeConflicts(tc: t.TestCase): void;
 export function testObserveDeepProperties(tc: t.TestCase): void;
 export function testObserversUsingObservedeep(tc: t.TestCase): void;
+export function testPathsOfSiblingEvents(tc: t.TestCase): void;
 export function testThrowsAddAndUpdateAndDeleteEvents(tc: t.TestCase): void;
 export function testThrowsDeleteEventsOnClear(tc: t.TestCase): void;
 export function testChangeEvent(tc: t.TestCase): void;

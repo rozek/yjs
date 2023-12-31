@@ -16,6 +16,7 @@ export class ItemTextListPosition {
     forward(): void;
 }
 export function cleanupYTextFormatting(type: YText): number;
+export function cleanupYTextAfterTransaction(transaction: Transaction): void;
 /**
  * The Quill Delta format represents changes on a text document with
  * formatting information. For mor information visit {@link https://quilljs.com/docs/delta/|Quill Delta}
@@ -100,9 +101,10 @@ export class YText extends AbstractType<YTextEvent> {
      */
     _pending: (() => void)[] | null;
     /**
-     * @type {Array<ArraySearchMarker>}
+     * Whether this YText contains formatting attributes.
+     * This flag is updated when a formatting item is integrated (see ContentFormat.integrate)
      */
-    _searchMarker: Array<ArraySearchMarker>;
+    _hasFormatting: boolean;
     /**
      * Number of characters of this text type.
      *
@@ -244,10 +246,9 @@ export function readYText(_decoder: UpdateDecoderV1 | UpdateDecoderV2): YText;
  */
 export type TextAttributes = Object;
 import { Item } from "../structs/Item.js";
+import { Transaction } from "../utils/Transaction.js";
 import { YEvent } from "../utils/YEvent.js";
 import { AbstractType } from "./AbstractType.js";
-import { Transaction } from "../utils/Transaction.js";
-import { ArraySearchMarker } from "./AbstractType.js";
 import { Doc } from "../utils/Doc.js";
 import { Snapshot } from "../utils/Snapshot.js";
 import { ID } from "../utils/ID.js";
