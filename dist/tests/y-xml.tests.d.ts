@@ -8,5 +8,6 @@ export function testSiblings(_tc: t.TestCase): void;
 export function testInsertafter(_tc: t.TestCase): void;
 export function testClone(_tc: t.TestCase): void;
 export function testFormattingBug(_tc: t.TestCase): void;
+export function testElement(_tc: t.TestCase): void;
 import * as t from "lib0/testing";
 //# sourceMappingURL=y-xml.tests.d.ts.map

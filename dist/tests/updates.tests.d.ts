@@ -1,9 +1,9 @@
 export function testMergeUpdates(tc: t.TestCase): void;
 export function testKeyEncoding(tc: t.TestCase): void;
-export function testMergeUpdates1(tc: t.TestCase): void;
+export function testMergeUpdates1(_tc: t.TestCase): void;
 export function testMergeUpdates2(tc: t.TestCase): void;
 export function testMergePendingUpdates(tc: t.TestCase): void;
-export function testObfuscateUpdates(tc: t.TestCase): void;
+export function testObfuscateUpdates(_tc: t.TestCase): void;
 export type Enc = {
     mergeUpdates: (arg0: Array<Uint8Array>) => Uint8Array;
     encodeStateAsUpdate: (arg0: Y.Doc) => Uint8Array;
@@ -15,7 +15,7 @@ export type Enc = {
     };
     encodeStateVector: (arg0: Y.Doc) => Uint8Array;
     encodeStateVectorFromUpdate: (arg0: Uint8Array) => Uint8Array;
-    updateEventName: string;
+    updateEventName: 'update' | 'updateV2';
     description: string;
     diffUpdate: (arg0: Uint8Array, arg1: Uint8Array) => Uint8Array;
 };

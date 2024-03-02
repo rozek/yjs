@@ -1,4 +1,4 @@
-import { Observable } from 'lib0/observable';
+import { ObservableV2 } from 'lib0/observable';
 import * as array from 'lib0/array';
 import * as math from 'lib0/math';
 import * as map from 'lib0/map';
@@ -24,9 +24,9 @@ import * as object from 'lib0/object';
  * @note This interface is experimental and it is not advised to actually inherit this class.
  *       It just serves as typing information.
  *
- * @extends {Observable<any>}
+ * @extends {ObservableV2<any>}
  */
-class AbstractConnector extends Observable {
+class AbstractConnector extends ObservableV2 {
   /**
    * @param {Doc} ydoc
    * @param {any} awareness
@@ -392,10 +392,26 @@ const generateNewClientId = random.uint32;
  */
 
 /**
- * A Yjs instance handles the state of shared data.
- * @extends Observable<string>
+ * @typedef {Object} DocEvents
+ * @property {function(Doc):void} DocEvents.destroy
+ * @property {function(Doc):void} DocEvents.load
+ * @property {function(boolean, Doc):void} DocEvents.sync
+ * @property {function(Uint8Array, any, Doc, Transaction):void} DocEvents.update
+ * @property {function(Uint8Array, any, Doc, Transaction):void} DocEvents.updateV2
+ * @property {function(Doc):void} DocEvents.beforeAllTransactions
+ * @property {function(Transaction, Doc):void} DocEvents.beforeTransaction
+ * @property {function(Transaction, Doc):void} DocEvents.beforeObserverCalls
+ * @property {function(Transaction, Doc):void} DocEvents.afterTransaction
+ * @property {function(Transaction, Doc):void} DocEvents.afterTransactionCleanup
+ * @property {function(Doc, Array<Transaction>):void} DocEvents.afterAllTransactions
+ * @property {function({ loaded: Set<Doc>, added: Set<Doc>, removed: Set<Doc> }, Doc, Transaction):void} DocEvents.subdocs
  */
-class Doc extends Observable {
+
+/**
+ * A Yjs instance handles the state of shared data.
+ * @extends ObservableV2<DocEvents>
+ */
+class Doc extends ObservableV2 {
   /**
    * @param {DocOpts} opts configuration
    */
@@ -473,7 +489,7 @@ class Doc extends Observable {
       }
       this.isSynced = isSynced === undefined || isSynced === true;
       if (this.isSynced && !this.isLoaded) {
-        this.emit('load', []);
+        this.emit('load', [this]);
       }
     });
     /**
@@ -539,6 +555,7 @@ class Doc extends Observable {
    * Define all types right after the Yjs instance is created and store them in a separate object.
    * Also use the typed methods `getText(name)`, `getArray(name)`, ..
    *
+   * @template {typeof AbstractType<any>} Type
    * @example
    *   const y = new Y(..)
    *   const appState = {
@@ -547,12 +564,12 @@ class Doc extends Observable {
    *   }
    *
    * @param {string} name
-   * @param {Function} TypeConstructor The constructor of the type definition. E.g. Y.Text, Y.Array, Y.Map, ...
-   * @return {AbstractType<any>} The created type. Constructed with TypeConstructor
+   * @param {Type} TypeConstructor The constructor of the type definition. E.g. Y.Text, Y.Array, Y.Map, ...
+   * @return {InstanceType<Type>} The created type. Constructed with TypeConstructor
    *
    * @public
    */
-  get (name, TypeConstructor = AbstractType) {
+  get (name, TypeConstructor = /** @type {any} */ (AbstractType)) {
     const type = map.setIfUndefined(this.share, name, () => {
       // @ts-ignore
       const t = new TypeConstructor();
@@ -578,12 +595,12 @@ class Doc extends Observable {
         t._length = type._length;
         this.share.set(name, t);
         t._integrate(this, null);
-        return t
+        return /** @type {InstanceType<Type>} */ (t)
       } else {
         throw new Error(`Type with the name ${name} has already been defined with a different constructor`)
       }
     }
-    return type
+    return /** @type {InstanceType<Type>} */ (type)
   }
 
   /**
@@ -594,8 +611,7 @@ class Doc extends Observable {
    * @public
    */
   getArray (name = '') {
-    // @ts-ignore
-    return this.get(name, YArray)
+    return /** @type {YArray<T>} */ (this.get(name, YArray))
   }
 
   /**
@@ -605,7 +621,6 @@ class Doc extends Observable {
    * @public
    */
   getText (name = '') {
-    // @ts-ignore
     return this.get(name, YText)
   }
 
@@ -617,8 +632,17 @@ class Doc extends Observable {
    * @public
    */
   getMap (name = '') {
-    // @ts-ignore
-    return this.get(name, YMap)
+    return /** @type {YMap<T>} */ (this.get(name, YMap))
+  }
+
+  /**
+   * @param {string} [name]
+   * @return {YXmlElement}
+   *
+   * @public
+   */
+  getXmlElement (name = '') {
+    return /** @type {YXmlElement<{[key:string]:string}>} */ (this.get(name, YXmlElement))
   }
 
   /**
@@ -628,7 +652,6 @@ class Doc extends Observable {
    * @public
    */
   getXmlFragment (name = '') {
-    // @ts-ignore
     return this.get(name, YXmlFragment)
   }
 
@@ -672,25 +695,10 @@ class Doc extends Observable {
         transaction.subdocsRemoved.add(this);
       }, null, true);
     }
-    this.emit('destroyed', [true]);
+    // @ts-ignore
+    this.emit('destroyed', [true]); // DEPRECATED!
     this.emit('destroy', [this]);
     super.destroy();
-  }
-
-  /**
-   * @param {string} eventName
-   * @param {function(...any):any} f
-   */
-  on (eventName, f) {
-    super.on(eventName, f);
-  }
-
-  /**
-   * @param {string} eventName
-   * @param {function} f
-   */
-  off (eventName, f) {
-    super.off(eventName, f);
   }
 }
 
@@ -1283,6 +1291,23 @@ class UpdateEncoderV2 extends DSEncoderV2 {
     }
   }
 }
+
+/**
+ * @module encoding
+ */
+/*
+ * We use the first five bits in the info flag for determining the type of the struct.
+ *
+ * 0: GC
+ * 1: Item with Deleted content
+ * 2: Item with JSON content
+ * 3: Item with Binary content
+ * 4: Item with String content
+ * 5: Item with Embed content (for richtext content)
+ * 6: Item with Format content (a formatting marker for richtext content)
+ * 7: Item with Type
+ */
+
 
 /**
  * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
@@ -3403,15 +3428,10 @@ const clearUndoManagerStackItem = (tr, um, stackItem) => {
 /**
  * @param {UndoManager} undoManager
  * @param {Array<StackItem>} stack
- * @param {string} eventType
+ * @param {'undo'|'redo'} eventType
  * @return {StackItem?}
  */
 const popStackItem = (undoManager, stack, eventType) => {
-  /**
-   * Whether a change happened
-   * @type {StackItem?}
-   */
-  let result = null;
   /**
    * Keep a reference to the transaction so we can fire the event with the changedParentTypes
    * @type {any}
@@ -3420,7 +3440,7 @@ const popStackItem = (undoManager, stack, eventType) => {
   const doc = undoManager.doc;
   const scope = undoManager.scope;
   transact(doc, transaction => {
-    while (stack.length > 0 && result === null) {
+    while (stack.length > 0 && undoManager.currStackItem === null) {
       const store = doc.store;
       const stackItem = /** @type {StackItem} */ (stack.pop());
       /**
@@ -3468,7 +3488,7 @@ const popStackItem = (undoManager, stack, eventType) => {
           performedChange = true;
         }
       }
-      result = performedChange ? stackItem : null;
+      undoManager.currStackItem = performedChange ? stackItem : null;
     }
     transaction.changed.forEach((subProps, type) => {
       // destroy search marker if necessary
@@ -3478,11 +3498,12 @@ const popStackItem = (undoManager, stack, eventType) => {
     });
     _tr = transaction;
   }, undoManager);
-  if (result != null) {
+  if (undoManager.currStackItem != null) {
     const changedParentTypes = _tr.changedParentTypes;
-    undoManager.emit('stack-item-popped', [{ stackItem: result, type: eventType, changedParentTypes }, undoManager]);
+    undoManager.emit('stack-item-popped', [{ stackItem: undoManager.currStackItem, type: eventType, changedParentTypes, origin: undoManager }, undoManager]);
+    undoManager.currStackItem = null;
   }
-  return result
+  return undoManager.currStackItem
 };
 
 /**
@@ -3499,15 +3520,23 @@ const popStackItem = (undoManager, stack, eventType) => {
  */
 
 /**
+ * @typedef {Object} StackItemEvent
+ * @property {StackItem} StackItemEvent.stackItem
+ * @property {any} StackItemEvent.origin
+ * @property {'undo'|'redo'} StackItemEvent.type
+ * @property {Map<AbstractType<YEvent<any>>,Array<YEvent<any>>>} StackItemEvent.changedParentTypes
+ */
+
+/**
  * Fires 'stack-item-added' event when a stack item was added to either the undo- or
  * the redo-stack. You may store additional stack information via the
  * metadata property on `event.stackItem.meta` (it is a `Map` of metadata properties).
  * Fires 'stack-item-popped' event when a stack item was popped from either the
  * undo- or the redo-stack. You may restore the saved stack information from `event.stackItem.meta`.
  *
- * @extends {Observable<'stack-item-added'|'stack-item-popped'|'stack-cleared'|'stack-item-updated'>}
+ * @extends {ObservableV2<{'stack-item-added':function(StackItemEvent, UndoManager):void, 'stack-item-popped': function(StackItemEvent, UndoManager):void, 'stack-cleared': function({ undoStackCleared: boolean, redoStackCleared: boolean }):void, 'stack-item-updated': function(StackItemEvent, UndoManager):void }>}
  */
-class UndoManager extends Observable {
+class UndoManager extends ObservableV2 {
   /**
    * @param {AbstractType<any>|Array<AbstractType<any>>} typeScope Accepts either a single type, or an array of types
    * @param {UndoManagerOptions} options
@@ -3546,6 +3575,12 @@ class UndoManager extends Observable {
      */
     this.undoing = false;
     this.redoing = false;
+    /**
+     * The currently popped stack item if UndoManager.undoing or UndoManager.redoing
+     *
+     * @type {StackItem|null}
+     */
+    this.currStackItem = null;
     this.lastChange = 0;
     this.ignoreRemoteMapChanges = ignoreRemoteMapChanges;
     this.captureTimeout = captureTimeout;
@@ -3599,6 +3634,9 @@ class UndoManager extends Observable {
           keepItem(item, true);
         }
       });
+      /**
+       * @type {[StackItemEvent, UndoManager]}
+       */
       const changeEvent = [{ stackItem: stack[stack.length - 1], origin: transaction.origin, type: undoing ? 'redo' : 'undo', changedParentTypes: transaction.changedParentTypes }, this];
       if (didAdd) {
         this.emit('stack-item-added', changeEvent);
@@ -5868,6 +5906,11 @@ class YArray extends AbstractType {
 const readYArray = _decoder => new YArray();
 
 /**
+ * @module YMap
+ */
+
+
+/**
  * @template T
  * @extends YEvent<YMap<T>>
  * Event that describes the changes on a YMap.
@@ -6123,6 +6166,11 @@ class YMap extends AbstractType {
 const readYMap = _decoder => new YMap();
 
 /**
+ * @module YText
+ */
+
+
+/**
  * @param {any} a
  * @param {any} b
  * @return {boolean}
@@ -6206,14 +6254,15 @@ const findNextPosition = (transaction, pos, count) => {
  * @param {Transaction} transaction
  * @param {AbstractType<any>} parent
  * @param {number} index
+ * @param {boolean} useSearchMarker
  * @return {ItemTextListPosition}
  *
  * @private
  * @function
  */
-const findPosition = (transaction, parent, index) => {
+const findPosition = (transaction, parent, index, useSearchMarker) => {
   const currentAttributes = new Map();
-  const marker = findMarker(parent, index);
+  const marker = useSearchMarker ? findMarker(parent, index) : null;
   if (marker) {
     const pos = new ItemTextListPosition(marker.p.left, marker.p, marker.index, currentAttributes);
     return findNextPosition(transaction, pos, index - marker.index)
@@ -6289,7 +6338,7 @@ const minimizeAttributeChanges = (currPos, attributes) => {
   while (true) {
     if (currPos.right === null) {
       break
-    } else if (currPos.right.deleted || (currPos.right.content.constructor === ContentFormat && equalAttrs(attributes[(/** @type {ContentFormat} */ (currPos.right.content)).key] || null, /** @type {ContentFormat} */ (currPos.right.content).value))) ; else {
+    } else if (currPos.right.deleted || (currPos.right.content.constructor === ContentFormat && equalAttrs(attributes[(/** @type {ContentFormat} */ (currPos.right.content)).key] ?? null, /** @type {ContentFormat} */ (currPos.right.content).value))) ; else {
       break
     }
     currPos.forward();
@@ -6313,7 +6362,7 @@ const insertAttributes = (transaction, parent, currPos, attributes) => {
   // insert format-start items
   for (const key in attributes) {
     const val = attributes[key];
-    const currentVal = currPos.currentAttributes.get(key) || null;
+    const currentVal = currPos.currentAttributes.get(key) ?? null;
     if (!equalAttrs(currentVal, val)) {
       // save negated attribute (set null if currentVal undefined)
       negatedAttributes.set(key, currentVal);
@@ -6475,12 +6524,12 @@ const cleanupFormattingGap = (transaction, start, curr, startAttributes, currAtt
       switch (content.constructor) {
         case ContentFormat: {
           const { key, value } = /** @type {ContentFormat} */ (content);
-          const startAttrValue = startAttributes.get(key) || null;
+          const startAttrValue = startAttributes.get(key) ?? null;
           if (endFormats.get(key) !== content || startAttrValue === value) {
             // Either this format is overwritten or it is not necessary because the attribute already existed.
             start.delete(transaction);
             cleanups++;
-            if (!reachedCurr && (currAttributes.get(key) || null) === value && startAttrValue !== value) {
+            if (!reachedCurr && (currAttributes.get(key) ?? null) === value && startAttrValue !== value) {
               if (startAttrValue === null) {
                 currAttributes.delete(key);
               } else {
@@ -6855,12 +6904,12 @@ class YTextEvent extends YEvent {
               const { key, value } = /** @type {ContentFormat} */ (item.content);
               if (this.adds(item)) {
                 if (!this.deletes(item)) {
-                  const curVal = currentAttributes.get(key) || null;
+                  const curVal = currentAttributes.get(key) ?? null;
                   if (!equalAttrs(curVal, value)) {
                     if (action === 'retain') {
                       addOp();
                     }
-                    if (equalAttrs(value, (oldAttributes.get(key) || null))) {
+                    if (equalAttrs(value, (oldAttributes.get(key) ?? null))) {
                       delete attributes[key];
                     } else {
                       attributes[key] = value;
@@ -6871,7 +6920,7 @@ class YTextEvent extends YEvent {
                 }
               } else if (this.deletes(item)) {
                 oldAttributes.set(key, value);
-                const curVal = currentAttributes.get(key) || null;
+                const curVal = currentAttributes.get(key) ?? null;
                 if (!equalAttrs(curVal, value)) {
                   if (action === 'retain') {
                     addOp();
@@ -7206,7 +7255,7 @@ class YText extends AbstractType {
     const y = this.doc;
     if (y !== null) {
       transact(y, transaction => {
-        const pos = findPosition(transaction, this, index);
+        const pos = findPosition(transaction, this, index, !attributes);
         if (!attributes) {
           attributes = {};
           // @ts-ignore
@@ -7224,20 +7273,20 @@ class YText extends AbstractType {
    *
    * @param {number} index The index to insert the embed at.
    * @param {Object | AbstractType<any>} embed The Object that represents the embed.
-   * @param {TextAttributes} attributes Attribute information to apply on the
+   * @param {TextAttributes} [attributes] Attribute information to apply on the
    *                                    embed
    *
    * @public
    */
-  insertEmbed (index, embed, attributes = {}) {
+  insertEmbed (index, embed, attributes) {
     const y = this.doc;
     if (y !== null) {
       transact(y, transaction => {
-        const pos = findPosition(transaction, this, index);
-        insertText(transaction, this, pos, embed, attributes);
+        const pos = findPosition(transaction, this, index, !attributes);
+        insertText(transaction, this, pos, embed, attributes || {});
       });
     } else {
-      /** @type {Array<function>} */ (this._pending).push(() => this.insertEmbed(index, embed, attributes));
+      /** @type {Array<function>} */ (this._pending).push(() => this.insertEmbed(index, embed, attributes || {}));
     }
   }
 
@@ -7256,7 +7305,7 @@ class YText extends AbstractType {
     const y = this.doc;
     if (y !== null) {
       transact(y, transaction => {
-        deleteText(transaction, findPosition(transaction, this, index), length);
+        deleteText(transaction, findPosition(transaction, this, index, true), length);
       });
     } else {
       /** @type {Array<function>} */ (this._pending).push(() => this.delete(index, length));
@@ -7280,7 +7329,7 @@ class YText extends AbstractType {
     const y = this.doc;
     if (y !== null) {
       transact(y, transaction => {
-        const pos = findPosition(transaction, this, index);
+        const pos = findPosition(transaction, this, index, false);
         if (pos.right === null) {
           return
         }
@@ -7799,7 +7848,7 @@ const readYXmlFragment = _decoder => new YXmlFragment();
 
 /**
  * An YXmlElement imitates the behavior of a
- * {@link https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element}.
+ * https://developer.mozilla.org/en-US/docs/Web/API/Element|Dom Element
  *
  * * An YXmlElement has attributes (key value pairs)
  * * An YXmlElement has childElements that must inherit from YXmlElement

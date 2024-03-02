@@ -3,6 +3,7 @@ export function testDeltaBug2(_tc: t.TestCase): void;
 export function testDeltaAfterConcurrentFormatting(tc: t.TestCase): void;
 export function testBasicInsertAndDelete(tc: t.TestCase): void;
 export function testBasicFormat(tc: t.TestCase): void;
+export function testFalsyFormats(tc: t.TestCase): void;
 export function testMultilineFormat(_tc: t.TestCase): void;
 export function testNotMergeEmptyLinesFormat(_tc: t.TestCase): void;
 export function testPreserveAttributesThroughDelete(_tc: t.TestCase): void;

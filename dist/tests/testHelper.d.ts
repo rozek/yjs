@@ -5,7 +5,7 @@ export namespace encV1 {
     const mergeUpdates: (updates: Uint8Array[]) => Uint8Array;
     const applyUpdate: (ydoc: Y.Doc, update: Uint8Array, transactionOrigin?: any) => void;
     const logUpdate: (update: Uint8Array) => void;
-    const updateEventName: string;
+    const updateEventName: "update";
     const diffUpdate: (update: Uint8Array, sv: Uint8Array) => Uint8Array;
 }
 export namespace encV2 {
@@ -17,7 +17,7 @@ export namespace encV2 {
     export { applyUpdate_1 as applyUpdate };
     const logUpdate_1: (update: Uint8Array, YDecoder?: typeof Y.UpdateDecoderV1 | typeof Y.UpdateDecoderV2 | undefined) => void;
     export { logUpdate_1 as logUpdate };
-    const updateEventName_1: string;
+    const updateEventName_1: "updateV2";
     export { updateEventName_1 as updateEventName };
     const diffUpdate_1: (update: Uint8Array, sv: Uint8Array, YDecoder?: typeof Y.UpdateDecoderV1 | typeof Y.UpdateDecoderV2 | undefined, YEncoder?: typeof Y.UpdateEncoderV2 | typeof Y.UpdateEncoderV1 | undefined) => Uint8Array;
     export { diffUpdate_1 as diffUpdate };

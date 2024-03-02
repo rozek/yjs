@@ -1,3 +1,4 @@
+export function testInconsistentFormat(): void;
 export function testInfiniteCaptureTimeout(tc: t.TestCase): void;
 export function testUndoText(tc: t.TestCase): void;
 export function testEmptyTypeScope(_tc: t.TestCase): void;
@@ -19,5 +20,6 @@ export function testUndoDeleteTextFormat(_tc: t.TestCase): void;
 export function testBehaviorOfIgnoreremotemapchangesProperty(_tc: t.TestCase): void;
 export function testSpecialDeletionCase(_tc: t.TestCase): void;
 export function testUndoDeleteInMap(tc: t.TestCase): void;
+export function testUndoDoingStackItem(_tc: t.TestCase): Promise<void>;
 import * as t from "lib0/testing";
 //# sourceMappingURL=undo-redo.tests.d.ts.map
