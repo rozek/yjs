@@ -34,6 +34,20 @@ Otherwise you can find help on our community [discussion board](https://discuss.
 Please contribute to the project financially - especially if your company relies
 on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=d42f2d)](https://github.com/sponsors/dmonad)
 
+## Professional Support
+
+* [Support Contract with the Maintainer](https://github.com/sponsors/dmonad) -
+By contributing financially to the open-source Yjs project, you can receive
+professional support directly from the author. This includes the opportunity for
+weekly video calls to discuss your specific challenges.
+* [Synergy Codes](https://synergycodes.com/yjs-services/) - Specializing in
+consulting and developing real-time collaborative editing solutions for visual
+apps, Synergy Codes focuses on interactive diagrams, complex graphs, charts, and
+various data visualization types. Their expertise empowers developers to build
+engaging and interactive visual experiences leveraging the power of Yjs. See
+their work in action at [Visual Collaboration
+Showcase](https://yjs-diagram.synergy.codes/).
+
 ## Who is using Yjs
 
 * [AFFiNE](https://affine.pro/) A local-first, privacy-first, open source
@@ -78,6 +92,7 @@ on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%2
 * [btw](https://www.btw.so) Open-source Medium alternative
 * [AWS SageMaker](https://aws.amazon.com/sagemaker/) Tools for building Machine
   Learning Models
+* [linear](https://linear.app) Streamline issues, projects, and product roadmaps.
 
 ## Table of Contents
 
@@ -212,6 +227,10 @@ y-websocket provider.
 @toeverything/y-indexeddb</a></dt>
   <dd>
 Like y-indexeddb, but with sub-documents support and fully TypeScript.
+  </dd>
+  <dt><a href="https://github.com/podraven/y-fire">y-fire</a></dt>
+  <dd>
+A database and connection provider for Yjs based on Firestore.
   </dd>
 </dl>
 
@@ -729,6 +748,8 @@ type. Doesn't log types that have not been defined (using
   <dd>Define a shared Y.Map type. Is equivalent to <code>y.get(string, Y.Map)</code>.</dd>
   <b><code>getText(string):Y.Text</code></b>
   <dd>Define a shared Y.Text type. Is equivalent to <code>y.get(string, Y.Text)</code>.</dd>
+  <b><code>getXmlElement(string, string):Y.XmlElement</code></b>
+  <dd>Define a shared Y.XmlElement type. Is equivalent to <code>y.get(string, Y.XmlElement)</code>.</dd>
   <b><code>getXmlFragment(string):Y.XmlFragment</code></b>
   <dd>Define a shared Y.XmlFragment type. Is equivalent to <code>y.get(string, Y.XmlFragment)</code>.</dd>
   <b><code>on(string, function)</code></b>
@@ -866,7 +887,7 @@ ydoc2.getText().toString() // => "00000000000"
 #### Using V2 update format
 
 Yjs implements two update formats. By default you are using the V1 update format.
-You can opt-in into the V2 update format wich provides much better compression.
+You can opt-in into the V2 update format which provides much better compression.
 It is not yet used by all providers. However, you can already use it if
 you are building your own provider. All below functions are available with the
 suffix "V2". E.g. `Y.applyUpdate` ⇒ `Y.applyUpdateV2`. Also when listening to updates
