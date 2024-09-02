@@ -21,9 +21,9 @@
    * Copy a Map object into a fresh Map object.
    *
    * @function
-   * @template X,Y
-   * @param {Map<X,Y>} m
-   * @return {Map<X,Y>}
+   * @template K,V
+   * @param {Map<K,V>} m
+   * @return {Map<K,V>}
    */
   const copy = m => {
     const r = create$6();
@@ -40,12 +40,12 @@
    * ```
    *
    * @function
-   * @template V,K
-   * @template {Map<K,V>} MAP
+   * @template {Map<any, any>} MAP
+   * @template {MAP extends Map<any,infer V> ? function():V : unknown} CF
    * @param {MAP} map
-   * @param {K} key
-   * @param {function():V} createT
-   * @return {V}
+   * @param {MAP extends Map<infer K,any> ? K : unknown} key
+   * @param {CF} createT
+   * @return {ReturnType<CF>}
    */
   const setIfUndefined = (map, key, createT) => {
     let set = map.get(key);
@@ -315,7 +315,7 @@
   /* c8 ignore start */
   try {
     // if the same-origin rule is violated, accessing localStorage might thrown an error
-    if (typeof localStorage !== 'undefined') {
+    if (typeof localStorage !== 'undefined' && localStorage) {
       _localStorage = localStorage;
       usePolyfill = false;
     }
@@ -373,10 +373,17 @@
   };
 
   /**
+   * @deprecated use object.size instead
    * @param {Object<string,any>} obj
    * @return {number}
    */
   const length$1 = obj => keys(obj).length;
+
+  /**
+   * @param {Object<string,any>} obj
+   * @return {number}
+   */
+  const size = obj => keys(obj).length;
 
   /**
    * @param {Object|undefined} obj
@@ -417,7 +424,7 @@
    * @param {Object<string,any>} b
    * @return {boolean}
    */
-  const equalFlat = (a, b) => a === b || (length$1(a) === length$1(b) && every(a, (val, key) => (val !== undefined || hasProperty(b, key)) && b[key] === val));
+  const equalFlat = (a, b) => a === b || (size(a) === size(b) && every(a, (val, key) => (val !== undefined || hasProperty(b, key)) && b[key] === val));
 
   /**
    * Common functions and function call helpers.
@@ -469,10 +476,10 @@
    */
 
 
-  /* c8 ignore next */
+  /* c8 ignore next 2 */
   // @ts-ignore
-  const isNode = typeof process !== 'undefined' && process.release &&
-    /node|io\.js/.test(process.release.name);
+  const isNode = typeof process !== 'undefined' && process.release && /node|io\.js/.test(process.release.name) && Object.prototype.toString.call(typeof process !== 'undefined' ? process : 0) === '[object process]';
+
   /* c8 ignore next */
   const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined' && !isNode;
 
@@ -546,7 +553,7 @@
   /* c8 ignore next 4 */
   const getVariable = (name) =>
     isNode
-      ? undefinedToNull(process.env[name.toUpperCase()])
+      ? undefinedToNull(process.env[name.toUpperCase().replaceAll('-', '_')])
       : undefinedToNull(varStorage.getItem(name));
 
   /**
@@ -565,11 +572,22 @@
     isOneOf(process.env.FORCE_COLOR, ['true', '1', '2']);
 
   /* c8 ignore start */
-  const supportsColor = !hasParam('no-colors') &&
-    (!isNode || process.stdout.isTTY || forceColor) && (
-    !isNode || hasParam('color') || forceColor ||
+  /**
+   * Color is enabled by default if the terminal supports it.
+   *
+   * Explicitly enable color using `--color` parameter
+   * Disable color using `--no-color` parameter or using `NO_COLOR=1` environment variable.
+   * `FORCE_COLOR=1` enables color and takes precedence over all.
+   */
+  const supportsColor = forceColor || (
+    !hasParam('--no-colors') && // @todo deprecate --no-colors
+    !hasConf('no-color') &&
+    (!isNode || process.stdout.isTTY) && (
+      !isNode ||
+      hasParam('--color') ||
       getVariable('COLORTERM') !== null ||
       (getVariable('TERM') || '').includes('color')
+    )
   );
   /* c8 ignore stop */
 
@@ -914,17 +932,36 @@
 
   /* c8 ignore start */
   /**
-   * @param {Array<string|Symbol|Object|number>} args
-   * @return {Array<string|object|number>}
+   * @param {Array<undefined|string|Symbol|Object|number|function():any>} args
+   * @return {Array<string|object|number|undefined>}
    */
   const computeNoColorLoggingArgs = args => {
+    if (args.length === 1 && args[0]?.constructor === Function) {
+      args = /** @type {Array<string|Symbol|Object|number>} */ (/** @type {[function]} */ (args)[0]());
+    }
+    const strBuilder = [];
     const logArgs = [];
     // try with formatting until we find something unsupported
     let i = 0;
     for (; i < args.length; i++) {
       const arg = args[i];
-      if (arg.constructor === String || arg.constructor === Number) ; else if (arg.constructor === Object) {
-        logArgs.push(JSON.stringify(arg));
+      if (arg === undefined) {
+        break
+      } else if (arg.constructor === String || arg.constructor === Number) {
+        strBuilder.push(arg);
+      } else if (arg.constructor === Object) {
+        break
+      }
+    }
+    if (i > 0) {
+      // create logArgs with what we have so far
+      logArgs.push(strBuilder.join(''));
+    }
+    // append the rest
+    for (; i < args.length; i++) {
+      const arg = args[i];
+      if (!(arg instanceof Symbol)) {
+        logArgs.push(arg);
       }
     }
     return logArgs
@@ -954,11 +991,14 @@
   };
 
   /**
-   * @param {Array<string|Symbol|Object|number>} args
+   * @param {Array<string|Symbol|Object|number|function():any>} args
    * @return {Array<string|object|number>}
    */
   /* c8 ignore start */
   const computeBrowserLoggingArgs = (args) => {
+    if (args.length === 1 && args[0]?.constructor === Function) {
+      args = /** @type {Array<string|Symbol|Object|number>} */ (/** @type {[function]} */ (args)[0]());
+    }
     const strBuilder = [];
     const styles = [];
     const currentStyle = create$6();
@@ -975,6 +1015,9 @@
       if (style !== undefined) {
         currentStyle.set(style.left, style.right);
       } else {
+        if (arg === undefined) {
+          break
+        }
         if (arg.constructor === String || arg.constructor === Number) {
           const style = mapToStyleString(currentStyle);
           if (i > 0 || style.length > 0) {
@@ -1102,12 +1145,15 @@
     // try with formatting until we find something unsupported
     let i = 0;
     for (; i < args.length; i++) {
-      const arg = args[i];
+      let arg = args[i];
       // @ts-ignore
       const style = _browserStyleMap[arg];
       if (style !== undefined) {
         currentStyle.set(style.left, style.right);
       } else {
+        if (arg === undefined) {
+          arg = 'undefined ';
+        }
         if (arg.constructor === String || arg.constructor === Number) {
           // @ts-ignore
           const span = element('span', [
@@ -1629,7 +1675,7 @@
       uint8arr.set(d, curPos);
       curPos += d.length;
     }
-    uint8arr.set(createUint8ArrayViewFromArrayBuffer(encoder.cbuf.buffer, 0, encoder.cpos), curPos);
+    uint8arr.set(new Uint8Array(encoder.cbuf.buffer, 0, encoder.cpos), curPos);
     return uint8arr
   };
 
@@ -1643,7 +1689,7 @@
   const verifyLen = (encoder, len) => {
     const bufferLen = encoder.cbuf.length;
     if (bufferLen - encoder.cpos < len) {
-      encoder.bufs.push(createUint8ArrayViewFromArrayBuffer(encoder.cbuf.buffer, 0, encoder.cpos));
+      encoder.bufs.push(new Uint8Array(encoder.cbuf.buffer, 0, encoder.cpos));
       encoder.cbuf = new Uint8Array(max(bufferLen, len) * 2);
       encoder.cpos = 0;
     }
@@ -2072,6 +2118,11 @@
       }
     }
 
+    /**
+     * Flush the encoded state and transform this to a Uint8Array.
+     *
+     * Note that this should only be called once.
+     */
     toUint8Array () {
       flushUintOptRleEncoder(this);
       return toUint8Array(this.encoder)
@@ -2139,6 +2190,11 @@
       }
     }
 
+    /**
+     * Flush the encoded state and transform this to a Uint8Array.
+     *
+     * Note that this should only be called once.
+     */
     toUint8Array () {
       flushIntDiffOptRleEncoder(this);
       return toUint8Array(this.encoder)
@@ -2299,7 +2355,7 @@
    * @return {Uint8Array}
    */
   const readUint8Array = (decoder, len) => {
-    const view = createUint8ArrayViewFromArrayBuffer(decoder.arr.buffer, decoder.pos + decoder.arr.byteOffset, len);
+    const view = new Uint8Array(decoder.arr.buffer, decoder.pos + decoder.arr.byteOffset, len);
     decoder.pos += len;
     return view
   };
@@ -2687,7 +2743,7 @@
    */
   const fromBase64Node = s => {
     const buf = Buffer.from(s, 'base64');
-    return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength)
+    return createUint8ArrayViewFromArrayBuffer(buf.buffer, buf.byteOffset, buf.byteLength)
   };
 
   /* c8 ignore next */
@@ -2887,7 +2943,7 @@
    * @param {number} timeout
    * @return {Promise<undefined>}
    */
-  const wait = timeout => create((resolve, reject) => setTimeout(resolve, timeout));
+  const wait = timeout => create((resolve, _reject) => setTimeout(resolve, timeout));
 
   /**
    * Checks if an object is a promise using ducktyping.
@@ -3420,7 +3476,7 @@
    * This is basically a (better typed) duplicate of Observable, which will replace Observable in the
    * next release.
    *
-   * @template {{[key: string]: function(...any):void}} EVENTS
+   * @template {{[key in keyof EVENTS]: function(...any):void}} EVENTS
    */
   class ObservableV2 {
     constructor () {
@@ -3432,7 +3488,7 @@
     }
 
     /**
-     * @template {string} NAME
+     * @template {keyof EVENTS & string} NAME
      * @param {NAME} name
      * @param {EVENTS[NAME]} f
      */
@@ -3442,7 +3498,7 @@
     }
 
     /**
-     * @template {string} NAME
+     * @template {keyof EVENTS & string} NAME
      * @param {NAME} name
      * @param {EVENTS[NAME]} f
      */
@@ -3458,7 +3514,7 @@
     }
 
     /**
-     * @template {string} NAME
+     * @template {keyof EVENTS & string} NAME
      * @param {NAME} name
      * @param {EVENTS[NAME]} f
      */
@@ -3478,7 +3534,7 @@
      *
      * @todo This should catch exceptions
      *
-     * @template {string} NAME
+     * @template {keyof EVENTS & string} NAME
      * @param {NAME} name The event name.
      * @param {Parameters<EVENTS[NAME]>} args The arguments that are applied to the event listener.
      */
@@ -13845,8 +13901,8 @@
    * When the server receives SyncStep1, it should reply with SyncStep2 immediately followed by SyncStep1. The client replies
    * with SyncStep2 when it receives SyncStep1. Optionally the server may send a SyncDone after it received SyncStep2, so the
    * client knows that the sync is finished.  There are two reasons for this more elaborated sync model: 1. This protocol can
-   * easily be implemented on top of http and websockets. 2. The server shoul only reply to requests, and not initiate them.
-   * Therefore it is necesarry that the client initiates the sync.
+   * easily be implemented on top of http and websockets. 2. The server should only reply to requests, and not initiate them.
+   * Therefore it is necessary that the client initiates the sync.
    *
    * Construction of a message:
    * [messageType : varUint, message definition..]
@@ -13928,7 +13984,7 @@
 
   /**
    * @param {decoding.Decoder} decoder A message received from another client
-   * @param {encoding.Encoder} encoder The reply message. Will not be sent if empty.
+   * @param {encoding.Encoder} encoder The reply message. Does not need to be sent if empty.
    * @param {Y.Doc} doc
    * @param {any} transactionOrigin
    */
