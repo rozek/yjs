@@ -5,7 +5,7 @@
 
 > **Important: if you plan to use Yjs in a "no-build environment" (i.e., without using a module bundler such as [webpack](https://webpack.js.org/) or [Rollup](https://rollupjs.org/)), please import from my [Yjs bundle](https://github.com/rozek/yjs-bundle) in order to avoid a [serious Yjs issue](https://github.com/yjs/yjs/issues/438)!**
 
-Yjs is a [CRDT implementation](#Yjs-CRDT-Algorithm) that exposes its internal
+Yjs is a [CRDT implementation](#yjs-crdt-algorithm) that exposes its internal
 data structure as *shared types*. Shared types are common data types like `Map`
 or `Array` with superpowers: changes are automatically distributed to other
 peers and merged without merge conflicts.
@@ -51,12 +51,16 @@ Showcase](https://yjs-diagram.synergy.codes/).
 ## Who is using Yjs
 
 * [AFFiNE](https://affine.pro/) A local-first, privacy-first, open source
-  knowledge base. 🏅
+  knowledge base. :star2:
+* [Huly](https://huly.io/) - Open Source All-in-One Project Management Platform :star2:
 * [Cargo](https://cargo.site/) Site builder for designers and artists :star2:
 * [Gitbook](https://gitbook.com) Knowledge management for technical teams :star2:
 * [Evernote](https://evernote.com) Note-taking app :star2:
 * [Lessonspace](https://thelessonspace.com) Enterprise platform for virtual
   classrooms and online training :star2:
+* [Ellipsus](ellipsus.com) - Collaborative writing app for storytelling etc.
+  Supports versioning, change attribution, and "blame". A solution for the whole
+  publishing process (also selling) :star:
 * [Dynaboard](https://dynaboard.com/) Build web apps collaboratively. :star:
 * [Relm](https://www.relm.us/) A collaborative gameworld for teamwork and
   community. :star:
@@ -66,11 +70,15 @@ Showcase](https://yjs-diagram.synergy.codes/).
   Nimbus Web. :star:
 * [Pluxbox RadioManager](https://getradiomanager.com/) A web-based app to
   collaboratively organize radio broadcasts. :star:
+* [modyfi](https://www.modyfi.com) - Modyfi is the design platform built for
+  multidisciplinary designers. Design, generate, animate, and more — without
+  switching between apps. :star:
 * [Sana](https://sanalabs.com/) A learning platform with collaborative text
   editing powered by Yjs.
 * [Serenity Notes](https://www.serenity.re/en/notes) End-to-end encrypted
   collaborative notes app.
-* [PRSM](https://prsm.uk/) Collaborative mind-mapping and system visualisation. *[(source)](https://github.com/micrology/prsm)*
+* [PRSM](https://prsm.uk/) Collaborative mind-mapping and system visualisation.
+  *[(source)](https://github.com/micrology/prsm)*
 * [Alldone](https://alldone.app/) A next-gen project management and
   collaboration platform.
 * [Living Spec](https://livingspec.com/) A modern way for product teams to collaborate.
@@ -93,22 +101,41 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [AWS SageMaker](https://aws.amazon.com/sagemaker/) Tools for building Machine
   Learning Models
 * [linear](https://linear.app) Streamline issues, projects, and product roadmaps.
+* [btw](https://www.btw.so) - Personal website builder
+* [AWS SageMaker](https://aws.amazon.com/sagemaker/) - Machine Learning Service
+* [Arkiter](https://www.arkiter.com/) - Live interview software
+* [Appflowy](https://www.appflowy.io/) - They use Yrs
+* [Multi.app](https://multi.app) - Multiplayer app sharing: Point, draw and edit
+  in shared apps as if they're on your computer. They are using Yrs.
+* [AppMaster](https://appmaster.io) A No-Code platform for creating
+  production-ready applications with source code generation.
+* [Synthesia](https://www.synthesia.io) - Collaborative Video Editor
+* [thinkdeli](https://thinkdeli.com) - A fast and simple notes app powered by AI
+* [ourboard](https://github.com/raimohanska/ourboard) - A collaborative whiteboard
+  applicaiton
+* [Ellie.ai](https://ellie.ai) - Data Product Design and Collaboration
+* [GoPeer](https://gopeer.org/) - Collaborative tutoring
+* [screen.garden](https://screen.garden) - Collaborative backend for PKM apps.
+* [NextCloud](https://nextcloud.com/) - Content Collaboration Platform
+* [keystatic](https://github.com/Thinkmill/keystatic) - git-based CMS
+* [QDAcity](https://qdacity.com) - Collaborative qualitative data analysis platform
+* [Kanbert](https://kanbert.com) - Project management software
 
 ## Table of Contents
 
-* [Overview](#Overview)
-  * [Bindings](#Bindings)
-  * [Providers](#Providers)
-  * [Ports](#Ports)
-* [Getting Started](#Getting-Started)
-* [API](#API)
-  * [Shared Types](#Shared-Types)
-  * [Y.Doc](#YDoc)
-  * [Document Updates](#Document-Updates)
-  * [Relative Positions](#Relative-Positions)
-  * [Y.UndoManager](#YUndoManager)
-* [Yjs CRDT Algorithm](#Yjs-CRDT-Algorithm)
-* [License and Author](#License-and-Author)
+* [Overview](#overview)
+  * [Bindings](#bindings)
+  * [Providers](#providers)
+  * [Ports](#ports)
+* [Getting Started](#getting-started)
+* [API](#api)
+  * [Shared Types](#shared-types)
+  * [Y.Doc](#ydoc)
+  * [Document Updates](#document-updates)
+  * [Relative Positions](#relative-positions)
+  * [Y.UndoManager](#yundomanager)
+* [Yjs CRDT Algorithm](#yjs-crdt-algorithm)
+* [License and Author](#license-and-author)
 
 ## Overview
 
@@ -126,8 +153,10 @@ are implemented in separate modules.
 | [Monaco](https://microsoft.github.io/monaco-editor/) | ✔ | [y-monaco](https://github.com/yjs/y-monaco) | [demo](https://demos.yjs.dev/monaco/monaco.html) |
 | [Slate](https://github.com/ianstormtaylor/slate) | ✔ | [slate-yjs](https://github.com/bitphinix/slate-yjs) | [demo](https://bitphinix.github.io/slate-yjs-example) |
 | [BlockSuite](https://github.com/toeverything/blocksuite) | ✔ | (native) | [demo](https://blocksuite-toeverything.vercel.app/?init) |
+| [Lexical](https://lexical.dev/) | ✔ | (native) | [demo](https://lexical.dev/docs/collaboration/react#see-it-in-action) |
 | [valtio](https://github.com/pmndrs/valtio) |  | [valtio-yjs](https://github.com/dai-shi/valtio-yjs) | [demo](https://codesandbox.io/s/valtio-yjs-demo-ox3iy) |
 | [immer](https://github.com/immerjs/immer) |  | [immer-yjs](https://github.com/sep2/immer-yjs) | [demo](https://codesandbox.io/s/immer-yjs-demo-6e0znb) |
+| React | | [react-yjs](https://github.com/nikgraf/react-yjs) | [demo](https://react-yjs-example.vercel.app/) |
 | React / Vue / Svelte / MobX | | [SyncedStore](https://syncedstore.org) | [demo](https://syncedstore.org/docs/react) |
 | [mobx-keystone](https://mobx-keystone.js.org/) |  | [mobx-keystone-yjs](https://github.com/xaviergonz/mobx-keystone/tree/master/packages/mobx-keystone-yjs) | [demo](https://mobx-keystone.js.org/examples/yjs-binding) |
 
@@ -147,9 +176,10 @@ collaborative app.
   <dt><a href="https://github.com/yjs/y-websocket">y-websocket</a></dt>
   <dd>
 A module that contains a simple websocket backend and a websocket client that
-connects to that backend. The backend can be extended to persist updates in a
-leveldb database. <b>y-sweet</b> and <b>ypy-websocket</b> (see below) are
-compatible to the y-wesocket protocol.
+connects to that backend. <a href="https://github.com/yjs/y-redis/"><b>y-redis</b></a>,
+<b>y-sweet</b>, <b>ypy-websocket</b> and <a href="https://tiptap.dev/docs/hocuspocus/introduction">
+<b>Hocuspocus</b></a> (see below) are alternative
+backends to y-websocket.
   </dd>
   <dt><a href="https://github.com/yjs/y-webrtc">y-webrtc</a></dt>
   <dd>
@@ -171,6 +201,10 @@ browser DevTools extension.
   <dd>
 A standalone yjs server with persistence to S3 or filesystem. They offer a
 <a href="https://y-sweet.cloud">cloud service</a> as well.
+  </dd>
+  <dt><a href="https://github.com/ueberdosis/hocuspocus">Hocuspocus</a></dt>
+  <dd>
+A standalone extensible yjs server with sqlite persistence, webhooks, auth and more.
   </dd>
   <dt><a href="https://docs.partykit.io/reference/y-partykit-api/">PartyKit</a></dt>
   <dd>
@@ -207,6 +241,15 @@ An ActionCable companion for Yjs clients. There is a fitting
   <dd>
 Websocket backend, written in Python.
   </dd>
+  <dt><a href="https://tinybase.org/">Tinybase</a></dt>
+  <dd>
+The reactive data store for local-first apps. They support multiple CRDTs and
+    different network technologies.
+  </dd>
+  <dt><a href="https://codeberg.org/webxdc/y-webxdc">y-webxdc</a></dt>
+  <dd>
+Provider for sharing data in <a href="https://webxdc.org">webxdc chat apps</a>.
+  </dd>
 </dl>
 
 #### Persistence Providers
@@ -231,6 +274,17 @@ Like y-indexeddb, but with sub-documents support and fully TypeScript.
   <dt><a href="https://github.com/podraven/y-fire">y-fire</a></dt>
   <dd>
 A database and connection provider for Yjs based on Firestore.
+  </dd>
+  <dt><a href="https://github.com/malte-j/y-op-sqlite">y-op-sqlite</a></dt>
+  <dd>
+  Persist YJS updates in your React Native app using
+   <a href="https://github.com/OP-Engineering/op-sqlite">op-sqlite</a>
+  , the fastest SQLite library for React Native.  
+  </dd>
+  <dt><a href="https://github.com/MaxNoetzold/y-postgresql">y-postgresql</a></dt>
+  <dd>
+  Provides persistent storage for a web server using PostgreSQL and
+  is easily compatible with y-websocket.  
   </dd>
 </dl>
 
@@ -261,7 +315,7 @@ npm i yjs y-websocket
 Start the y-websocket server:
 
 ```sh
-PORT=1234 node ./node_modules/y-websocket/bin/server.js
+PORT=1234 node ./node_modules/y-websocket/bin/server.cjs
 ```
 
 ### Example: Observe types
@@ -362,6 +416,11 @@ necessary.
   </p>
   <pre>const yarray = new Y.Array()</pre>
   <dl>
+    <b><code>
+Y.Array.from(Array&lt;object|boolean|Array|string|number|null|Uint8Array|Y.Type&gt;):
+Y.Array
+    </code></b>
+    <dd>An alternative factory function to create a Y.Array based on existing content.</dd>
     <b><code>parent:Y.AbstractType|null</code></b>
     <dd></dd>
     <b><code>insert(index:number, content:Array&lt;object|boolean|Array|string|number|null|Uint8Array|Y.Type&gt;)</code></b>
@@ -391,6 +450,11 @@ forEach(function(value:object|boolean|Array|string|number|null|Uint8Array|Y.Type
     <dd></dd>
     <b><code>map(function(T, number, YArray):M):Array&lt;M&gt;</code></b>
     <dd></dd>
+    <b><code>clone(): Y.Array</code></b>
+    <dd>
+Clone all values into a fresh Y.Array instance. The returned type can be
+included into the Yjs document.
+    </dd>
     <b><code>toArray():Array&lt;object|boolean|Array|string|number|null|Uint8Array|Y.Type&gt;</code></b>
     <dd>Copies the content of this YArray to a new Array.</dd>
     <b><code>toJSON():Array&lt;Object|boolean|Array|string|number|null&gt;</code></b>
@@ -449,8 +513,6 @@ or any of its children.
     <b><code>delete(key:string)</code></b>
     <dd></dd>
     <b><code>has(key:string):boolean</code></b>
-    <dd></dd>
-    <b><code>get(index:number)</code></b>
     <dd></dd>
     <b><code>clear()</code></b>
     <dd>Removes all elements from this YMap.</dd>
@@ -805,7 +867,7 @@ doc1.getArray('myarray').insert(0, ['Hello doc2, you got this?'])
 doc2.getArray('myarray').get(0) // => 'Hello doc2, you got this?'
 ```
 
-Yjs internally maintains a [state vector](#State-Vector) that denotes the next
+Yjs internally maintains a [state vector](#state-vector) that denotes the next
 expected clock from each client. In a different interpretation it holds the
 number of structs created by each client. When two clients sync, you can either
 exchange the complete document structure or only the differences by sending the
