@@ -15,6 +15,7 @@ export function testInsertAndDeleteEvents(tc: t.TestCase): void;
 export function testNestedObserverEvents(tc: t.TestCase): void;
 export function testInsertAndDeleteEventsForTypes(tc: t.TestCase): void;
 export function testObserveDeepEventOrder(tc: t.TestCase): void;
+export function testObservedeepIndexes(_tc: t.TestCase): void;
 export function testChangeEvent(tc: t.TestCase): void;
 export function testInsertAndDeleteEventsForTypes2(tc: t.TestCase): void;
 export function testNewChildDoesNotEmitEventInTransaction(tc: t.TestCase): void;

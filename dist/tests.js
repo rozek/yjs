@@ -4076,22 +4076,22 @@
     /**
      * Define a shared data type.
      *
-     * Multiple calls of `y.get(name, TypeConstructor)` yield the same result
+     * Multiple calls of `ydoc.get(name, TypeConstructor)` yield the same result
      * and do not overwrite each other. I.e.
-     * `y.define(name, Y.Array) === y.define(name, Y.Array)`
+     * `ydoc.get(name, Y.Array) === ydoc.get(name, Y.Array)`
      *
-     * After this method is called, the type is also available on `y.share.get(name)`.
+     * After this method is called, the type is also available on `ydoc.share.get(name)`.
      *
      * *Best Practices:*
-     * Define all types right after the Yjs instance is created and store them in a separate object.
+     * Define all types right after the Y.Doc instance is created and store them in a separate object.
      * Also use the typed methods `getText(name)`, `getArray(name)`, ..
      *
      * @template {typeof AbstractType<any>} Type
      * @example
-     *   const y = new Y(..)
+     *   const ydoc = new Y.Doc(..)
      *   const appState = {
-     *     document: y.getText('document')
-     *     comments: y.getArray('comments')
+     *     document: ydoc.getText('document')
+     *     comments: ydoc.getArray('comments')
      *   }
      *
      * @param {string} name
@@ -4948,7 +4948,7 @@
             // @type {string|null}
             const struct = new Item(
               createID(client, clock),
-              null, // leftd
+              null, // left
               (info & BIT8) === BIT8 ? decoder.readLeftID() : null, // origin
               null, // right
               (info & BIT7) === BIT7 ? decoder.readRightID() : null, // right origin
@@ -4972,7 +4972,7 @@
 
             const struct = new Item(
               createID(client, clock),
-              null, // leftd
+              null, // left
               origin, // origin
               null, // right
               rightOrigin, // right origin
@@ -5164,7 +5164,7 @@
   /**
    * Read and apply a document update.
    *
-   * This function has the same effect as `applyUpdate` but accepts an decoder.
+   * This function has the same effect as `applyUpdate` but accepts a decoder.
    *
    * @param {decoding.Decoder} decoder
    * @param {Doc} ydoc
@@ -5245,7 +5245,7 @@
   /**
    * Read and apply a document update.
    *
-   * This function has the same effect as `applyUpdate` but accepts an decoder.
+   * This function has the same effect as `applyUpdate` but accepts a decoder.
    *
    * @param {decoding.Decoder} decoder
    * @param {Doc} ydoc
@@ -5848,7 +5848,7 @@
    *
    * @function
    */
-  const createRelativePositionFromJSON = json => new RelativePosition(json.type == null ? null : createID(json.type.client, json.type.clock), json.tname || null, json.item == null ? null : createID(json.item.client, json.item.clock), json.assoc == null ? 0 : json.assoc);
+  const createRelativePositionFromJSON = json => new RelativePosition(json.type == null ? null : createID(json.type.client, json.type.clock), json.tname ?? null, json.item == null ? null : createID(json.item.client, json.item.clock), json.assoc == null ? 0 : json.assoc);
 
   class AbsolutePosition {
     /**
@@ -6003,13 +6003,24 @@
   const decodeRelativePosition = uint8Array => readRelativePosition(createDecoder(uint8Array));
 
   /**
+   * Transform a relative position to an absolute position.
+   *
+   * If you want to share the relative position with other users, you should set
+   * `followUndoneDeletions` to false to get consistent results across all clients.
+   *
+   * When calculating the absolute position, we try to follow the "undone deletions". This yields
+   * better results for the user who performed undo. However, only the user who performed the undo
+   * will get the better results, the other users don't know which operations recreated a deleted
+   * range of content. There is more information in this ticket: https://github.com/yjs/yjs/issues/638
+   *
    * @param {RelativePosition} rpos
    * @param {Doc} doc
+   * @param {boolean} followUndoneDeletions - whether to follow undone deletions - see https://github.com/yjs/yjs/issues/638
    * @return {AbsolutePosition|null}
    *
    * @function
    */
-  const createAbsolutePositionFromRelativePosition = (rpos, doc) => {
+  const createAbsolutePositionFromRelativePosition = (rpos, doc, followUndoneDeletions = true) => {
     const store = doc.store;
     const rightID = rpos.item;
     const typeID = rpos.type;
@@ -6021,7 +6032,7 @@
       if (getState(store, rightID.client) <= rightID.clock) {
         return null
       }
-      const res = followRedone(store, rightID);
+      const res = followUndoneDeletions ? followRedone(store, rightID) : { item: getItem(store, rightID), diff: 0 };
       const right = res.item;
       if (!(right instanceof Item)) {
         return null
@@ -6045,7 +6056,7 @@
           // type does not exist yet
           return null
         }
-        const { item } = followRedone(store, typeID);
+        const { item } = followUndoneDeletions ? followRedone(store, typeID) : { item: getItem(store, typeID) };
         if (item instanceof Item && item.content instanceof ContentType) {
           type = item.content.type;
         } else {
@@ -6526,7 +6537,8 @@
    * possible. Here is an example to illustrate the advantages of bundling:
    *
    * @example
-   * const map = y.define('map', YMap)
+   * const ydoc = new Y.Doc()
+   * const map = ydoc.getMap('map')
    * // Log content when change is triggered
    * map.observe(() => {
    *   console.log('change triggered')
@@ -6535,7 +6547,7 @@
    * map.set('a', 0) // => "change triggered"
    * map.set('b', 0) // => "change triggered"
    * // When put in a transaction, it will trigger the log after the transaction:
-   * y.transact(() => {
+   * ydoc.transact(() => {
    *   map.set('a', 1)
    *   map.set('b', 1)
    * }) // => "change triggered"
@@ -6711,7 +6723,7 @@
    */
   const tryMergeDeleteSet = (ds, store) => {
     // try to merge deleted / gc'd items
-    // merge from right to left for better efficiecy and so we don't miss any merge targets
+    // merge from right to left for better efficiency and so we don't miss any merge targets
     ds.clients.forEach((deleteItems, client) => {
       const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client));
       for (let di = deleteItems.length - 1; di >= 0; di--) {
@@ -7029,12 +7041,13 @@
       });
       _tr = transaction;
     }, undoManager);
-    if (undoManager.currStackItem != null) {
+    const res = undoManager.currStackItem;
+    if (res != null) {
       const changedParentTypes = _tr.changedParentTypes;
-      undoManager.emit('stack-item-popped', [{ stackItem: undoManager.currStackItem, type: eventType, changedParentTypes, origin: undoManager }, undoManager]);
+      undoManager.emit('stack-item-popped', [{ stackItem: res, type: eventType, changedParentTypes, origin: undoManager }, undoManager]);
       undoManager.currStackItem = null;
     }
-    return undoManager.currStackItem
+    return res
   };
 
   /**
@@ -8246,8 +8259,8 @@
         let i = 0;
         let c = /** @type {AbstractType<any>} */ (child._item.parent)._start;
         while (c !== child._item && c !== null) {
-          if (!c.deleted) {
-            i++;
+          if (!c.deleted && c.countable) {
+            i += c.length;
           }
           c = c.right;
         }
@@ -8602,6 +8615,10 @@
     }
 
     /**
+     * Makes a copy of this data type that can be included somewhere else.
+     *
+     * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+     *
      * @return {AbstractType<EventType>}
      */
     clone () {
@@ -8763,7 +8780,7 @@
   };
 
   /**
-   * Executes a provided function on once on overy element of this YArray.
+   * Executes a provided function on once on every element of this YArray.
    *
    * @param {AbstractType<any>} type
    * @param {function(any,number,any):void} f A function to execute on every element of this YArray.
@@ -9232,16 +9249,7 @@
    * @template T
    * @extends YEvent<YArray<T>>
    */
-  class YArrayEvent extends YEvent {
-    /**
-     * @param {YArray<T>} yarray The changed type
-     * @param {Transaction} transaction The transaction object
-     */
-    constructor (yarray, transaction) {
-      super(yarray, transaction);
-      this._transaction = transaction;
-    }
-  }
+  class YArrayEvent extends YEvent {}
 
   /**
    * A shared Array implementation.
@@ -9302,6 +9310,10 @@
     }
 
     /**
+     * Makes a copy of this data type that can be included somewhere else.
+     *
+     * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+     *
      * @return {YArray<T>}
      */
     clone () {
@@ -9374,9 +9386,9 @@
     }
 
     /**
-     * Preppends content to this YArray.
+     * Prepends content to this YArray.
      *
-     * @param {Array<T>} content Array of content to preppend.
+     * @param {Array<T>} content Array of content to prepend.
      */
     unshift (content) {
       this.insert(0, content);
@@ -9418,7 +9430,8 @@
     }
 
     /**
-     * Transforms this YArray to a JavaScript Array.
+     * Returns a portion of this YArray into a JavaScript Array selected
+     * from start to end (end not included).
      *
      * @param {number} [start]
      * @param {number} [end]
@@ -9451,7 +9464,7 @@
     }
 
     /**
-     * Executes a provided function once on overy element of this YArray.
+     * Executes a provided function once on every element of this YArray.
      *
      * @param {function(T,number,YArray<T>):void} f A function to execute on every element of this YArray.
      */
@@ -9557,6 +9570,10 @@
     }
 
     /**
+     * Makes a copy of this data type that can be included somewhere else.
+     *
+     * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+     *
      * @return {YMap<MapType>}
      */
     clone () {
@@ -10609,6 +10626,10 @@
     }
 
     /**
+     * Makes a copy of this data type that can be included somewhere else.
+     *
+     * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+     *
      * @return {YText}
      */
     clone () {
@@ -11146,6 +11167,10 @@
     }
 
     /**
+     * Makes a copy of this data type that can be included somewhere else.
+     *
+     * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+     *
      * @return {YXmlFragment}
      */
     clone () {
@@ -11359,9 +11384,9 @@
     }
 
     /**
-     * Preppends content to this YArray.
+     * Prepends content to this YArray.
      *
-     * @param {Array<YXmlElement|YXmlText>} content Array of content to preppend.
+     * @param {Array<YXmlElement|YXmlText>} content Array of content to prepend.
      */
     unshift (content) {
       this.insert(0, content);
@@ -11378,7 +11403,8 @@
     }
 
     /**
-     * Transforms this YArray to a JavaScript Array.
+     * Returns a portion of this YXmlFragment into a JavaScript Array selected
+     * from start to end (end not included).
      *
      * @param {number} [start]
      * @param {number} [end]
@@ -11389,7 +11415,7 @@
     }
 
     /**
-     * Executes a provided function on once on overy child element.
+     * Executes a provided function on once on every child element.
      *
      * @param {function(YXmlElement|YXmlText,number, typeof self):void} f A function to execute on every element of this YArray.
      */
@@ -11486,6 +11512,10 @@
     }
 
     /**
+     * Makes a copy of this data type that can be included somewhere else.
+     *
+     * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+     *
      * @return {YXmlElement<KV>}
      */
     clone () {
@@ -11722,6 +11752,10 @@
     }
 
     /**
+     * Makes a copy of this data type that can be included somewhere else.
+     *
+     * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+     *
      * @return {YXmlHook}
      */
     clone () {
@@ -11812,6 +11846,10 @@
     }
 
     /**
+     * Makes a copy of this data type that can be included somewhere else.
+     *
+     * Note that the content is only readable _after_ it has been included somewhere in the Ydoc.
+     *
      * @return {YXmlText}
      */
     clone () {
@@ -13860,6 +13898,7 @@
     logType: logType,
     logUpdate: logUpdate,
     logUpdateV2: logUpdateV2,
+    mergeDeleteSets: mergeDeleteSets,
     mergeUpdates: mergeUpdates,
     mergeUpdatesV2: mergeUpdatesV2,
     obfuscateUpdate: obfuscateUpdate,
@@ -14547,6 +14586,7 @@
     logType: logType,
     logUpdate: logUpdate,
     logUpdateV2: logUpdateV2,
+    mergeDeleteSets: mergeDeleteSets,
     mergeUpdates: mergeUpdates,
     mergeUpdatesV2: mergeUpdatesV2,
     obfuscateUpdate: obfuscateUpdate,
@@ -15683,6 +15723,29 @@
   };
 
   /**
+   * Correct index when computing event.path in observeDeep - https://github.com/yjs/yjs/issues/457
+   *
+   * @param {t.TestCase} _tc
+   */
+  const testObservedeepIndexes = _tc => {
+    const doc = new Doc();
+    const map = doc.getMap();
+    // Create a field with the array as value
+    map.set('my-array', new YArray());
+    // Fill the array with some strings and our Map
+    map.get('my-array').push(['a', 'b', 'c', new YMap()]);
+    /**
+     * @type {Array<any>}
+     */
+    let eventPath = [];
+    map.observeDeep((events) => { eventPath = events[0].path; });
+    // set a value on the map inside of our array
+    map.get('my-array').get(3).set('hello', 'world');
+    console.log(eventPath);
+    compare$2(eventPath, ['my-array', 3]);
+  };
+
+  /**
    * @param {t.TestCase} tc
    */
   const testChangeEvent = tc => {
@@ -16019,6 +16082,7 @@
     testNestedObserverEvents: testNestedObserverEvents,
     testNewChildDoesNotEmitEventInTransaction: testNewChildDoesNotEmitEventInTransaction,
     testObserveDeepEventOrder: testObserveDeepEventOrder,
+    testObservedeepIndexes: testObservedeepIndexes,
     testRepeatGeneratingYarrayTests1000: testRepeatGeneratingYarrayTests1000,
     testRepeatGeneratingYarrayTests1800: testRepeatGeneratingYarrayTests1800,
     testRepeatGeneratingYarrayTests300: testRepeatGeneratingYarrayTests300,
@@ -20875,6 +20939,28 @@
     assert(posLeft != null && posLeft.index === 1);
   };
 
+  /**
+   * @param {t.TestCase} tc
+   */
+  const testRelativePositionWithUndo = tc => {
+    const ydoc = new Doc();
+    const ytext = ydoc.getText();
+    ytext.insert(0, 'hello world');
+    const rpos = createRelativePositionFromTypeIndex(ytext, 1);
+    const um = new UndoManager(ytext);
+    ytext.delete(0, 6);
+    assert(createAbsolutePositionFromRelativePosition(rpos, ydoc)?.index === 0);
+    um.undo();
+    assert(createAbsolutePositionFromRelativePosition(rpos, ydoc)?.index === 1);
+    const posWithoutFollow = createAbsolutePositionFromRelativePosition(rpos, ydoc, false);
+    console.log({ posWithoutFollow });
+    assert(createAbsolutePositionFromRelativePosition(rpos, ydoc, false)?.index === 6);
+    const ydocClone = new Doc();
+    applyUpdate(ydocClone, encodeStateAsUpdate(ydoc));
+    assert(createAbsolutePositionFromRelativePosition(rpos, ydocClone)?.index === 6);
+    assert(createAbsolutePositionFromRelativePosition(rpos, ydocClone, false)?.index === 6);
+  };
+
   var relativePositions = /*#__PURE__*/Object.freeze({
     __proto__: null,
     testRelativePositionAssociationDifference: testRelativePositionAssociationDifference,
@@ -20883,7 +20969,8 @@
     testRelativePositionCase3: testRelativePositionCase3,
     testRelativePositionCase4: testRelativePositionCase4,
     testRelativePositionCase5: testRelativePositionCase5,
-    testRelativePositionCase6: testRelativePositionCase6
+    testRelativePositionCase6: testRelativePositionCase6,
+    testRelativePositionWithUndo: testRelativePositionWithUndo
   });
 
   /* eslint-env node */
