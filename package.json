@@ -77,11 +77,13 @@
   },
   "homepage": "https://docs.yjs.dev",
   "dependencies": {
-    "lib0": "^0.2.99"
+    "lib0": "^0.2.99",
+    "linkify-it": "^5.0.0"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^24.0.1",
     "@rollup/plugin-node-resolve": "^15.0.1",
+    "@types/linkify-it": "^3.0.5",
     "@types/node": "^18.15.5",
     "concurrently": "^3.6.1",
     "http-server": "^0.12.3",
