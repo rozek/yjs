@@ -2,6 +2,8 @@ export function testInconsistentFormat(): void;
 export function testInfiniteCaptureTimeout(tc: t.TestCase): void;
 export function testUndoText(tc: t.TestCase): void;
 export function testEmptyTypeScope(_tc: t.TestCase): void;
+export function testRejectUpdateExample(_tc: t.TestCase): void;
+export function testGlobalScope(_tc: t.TestCase): void;
 export function testDoubleUndo(_tc: t.TestCase): void;
 export function testUndoMap(tc: t.TestCase): void;
 export function testUndoArray(tc: t.TestCase): void;

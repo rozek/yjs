@@ -1,4 +1,5 @@
 export function testBasicUpdate(tc: t.TestCase): void;
+export function testFailsObjectManipulationInDevMode(tc: t.TestCase): void;
 export function testSlice(tc: t.TestCase): void;
 export function testArrayFrom(tc: t.TestCase): void;
 export function testLengthIssue(tc: t.TestCase): void;

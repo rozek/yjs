@@ -427,6 +427,30 @@
   const equalFlat = (a, b) => a === b || (size(a) === size(b) && every(a, (val, key) => (val !== undefined || hasProperty(b, key)) && b[key] === val));
 
   /**
+   * Make an object immutable. This hurts performance and is usually not needed if you perform good
+   * coding practices.
+   */
+  const freeze = Object.freeze;
+
+  /**
+   * Make an object and all its children immutable.
+   * This *really* hurts performance and is usually not needed if you perform good coding practices.
+   *
+   * @template {any} T
+   * @param {T} o
+   * @return {Readonly<T>}
+   */
+  const deepFreeze = (o) => {
+    for (const key in o) {
+      const c = o[key];
+      if (typeof c === 'object' || typeof c === 'function') {
+        deepFreeze(o[key]);
+      }
+    }
+    return freeze(o)
+  };
+
+  /**
    * Common functions and function call helpers.
    *
    * @module function
@@ -3085,7 +3109,7 @@
    * @param {number} i
    * @param {number} numberOfTests
    */
-  const run = async (moduleName, name, f, i, numberOfTests) => {
+  const run$1 = async (moduleName, name, f, i, numberOfTests) => {
     const uncamelized = fromCamelCase(name.slice(4), ' ');
     const filtered = !testFilterRegExp.test(`[${i + 1}/${numberOfTests}] ${moduleName}: ${uncamelized}`);
     /* c8 ignore next 3 */
@@ -3412,7 +3436,7 @@
           const repeatEachTest = 1;
           let success = true;
           for (let i = 0; success && i < repeatEachTest; i++) {
-            success = await run(modName, fname, f, testnumber, numberOfTests);
+            success = await run$1(modName, fname, f, testnumber, numberOfTests);
           }
           testnumber++;
           /* c8 ignore else */
@@ -3994,8 +4018,9 @@
        * lost (with false as a parameter).
        */
       this.isSynced = false;
+      this.isDestroyed = false;
       /**
-       * Promise that resolves once the document has been loaded from a presistence provider.
+       * Promise that resolves once the document has been loaded from a persistence provider.
        */
       this.whenLoaded = create(resolve => {
         this.on('load', () => {
@@ -4212,6 +4237,7 @@
      * Emit `destroy` event and unregister all event handlers.
      */
     destroy () {
+      this.isDestroyed = true;
       from(this.subdocs).forEach(subdoc => subdoc.destroy());
       const item = this._item;
       if (item !== null) {
@@ -4672,7 +4698,7 @@
        */
       this.keyMap = new Map();
       /**
-       * Refers to the next uniqe key-identifier to me used.
+       * Refers to the next unique key-identifier to me used.
        * See writeKey method for more information.
        *
        * @type {number}
@@ -5006,7 +5032,7 @@
    * then we start emptying the stack.
    *
    * It is not possible to have circles: i.e. struct1 (from client1) depends on struct2 (from client2)
-   * depends on struct3 (from client1). Therefore the max stack size is eqaul to `structReaders.length`.
+   * depends on struct3 (from client1). Therefore the max stack size is equal to `structReaders.length`.
    *
    * This method is implemented in a way so that we can resume computation if this update
    * causally depends on another update.
@@ -5074,14 +5100,14 @@
     const addStackToRestSS = () => {
       for (const item of stack) {
         const client = item.id.client;
-        const unapplicableItems = clientsStructRefs.get(client);
-        if (unapplicableItems) {
+        const inapplicableItems = clientsStructRefs.get(client);
+        if (inapplicableItems) {
           // decrement because we weren't able to apply previous operation
-          unapplicableItems.i--;
-          restStructs.clients.set(client, unapplicableItems.refs.slice(unapplicableItems.i));
+          inapplicableItems.i--;
+          restStructs.clients.set(client, inapplicableItems.refs.slice(inapplicableItems.i));
           clientsStructRefs.delete(client);
-          unapplicableItems.i = 0;
-          unapplicableItems.refs = [];
+          inapplicableItems.i = 0;
+          inapplicableItems.refs = [];
         } else {
           // item was the last item on clientsStructRefs and the field was already cleared. Add item to restStructs and continue
           restStructs.clients.set(client, [item]);
@@ -5685,7 +5711,7 @@
           initUser(storeType.get(userDescription), userDescription)
         );
       });
-      // add intial data
+      // add initial data
       storeType.forEach(initUser);
     }
 
@@ -5813,7 +5839,7 @@
        * after the meant position.
        * I.e. position 1 in 'ab' is associated to character 'b'.
        *
-       * If assoc < 0, then the relative position is associated to the caharacter
+       * If assoc < 0, then the relative position is associated to the character
        * before the meant position.
        *
        * @type {number}
@@ -6004,6 +6030,18 @@
   const decodeRelativePosition = uint8Array => readRelativePosition(createDecoder(uint8Array));
 
   /**
+   * @param {StructStore} store
+   * @param {ID} id
+   */
+  const getItemWithOffset = (store, id) => {
+    const item = getItem(store, id);
+    const diff = id.clock - item.id.clock;
+    return {
+      item, diff
+    }
+  };
+
+  /**
    * Transform a relative position to an absolute position.
    *
    * If you want to share the relative position with other users, you should set
@@ -6033,7 +6071,7 @@
       if (getState(store, rightID.client) <= rightID.clock) {
         return null
       }
-      const res = followUndoneDeletions ? followRedone(store, rightID) : { item: getItem(store, rightID), diff: 0 };
+      const res = followUndoneDeletions ? followRedone(store, rightID) : getItemWithOffset(store, rightID);
       const right = res.item;
       if (!(right instanceof Item)) {
         return null
@@ -6963,7 +7001,7 @@
    */
   const clearUndoManagerStackItem = (tr, um, stackItem) => {
     iterateDeletedStructs(tr, stackItem.deletions, item => {
-      if (item instanceof Item && um.scope.some(type => isParentOf(type, item))) {
+      if (item instanceof Item && um.scope.some(type => type === tr.doc || isParentOf(/** @type {AbstractType<any>} */ (type), item))) {
         keepItem(item, false);
       }
     });
@@ -7005,7 +7043,7 @@
               }
               struct = item;
             }
-            if (!struct.deleted && scope.some(type => isParentOf(type, /** @type {Item} */ (struct)))) {
+            if (!struct.deleted && scope.some(type => type === transaction.doc || isParentOf(/** @type {AbstractType<any>} */ (type), /** @type {Item} */ (struct)))) {
               itemsToDelete.push(struct);
             }
           }
@@ -7013,7 +7051,7 @@
         iterateDeletedStructs(transaction, stackItem.deletions, struct => {
           if (
             struct instanceof Item &&
-            scope.some(type => isParentOf(type, struct)) &&
+            scope.some(type => type === transaction.doc || isParentOf(/** @type {AbstractType<any>} */ (type), struct)) &&
             // Never redo structs in stackItem.insertions because they were created and deleted in the same capture interval.
             !isDeleted(stackItem.insertions, struct.id)
           ) {
@@ -7083,7 +7121,7 @@
    */
   class UndoManager extends ObservableV2 {
     /**
-     * @param {AbstractType<any>|Array<AbstractType<any>>} typeScope Accepts either a single type, or an array of types
+     * @param {Doc|AbstractType<any>|Array<AbstractType<any>>} typeScope Limits the scope of the UndoManager. If this is set to a ydoc instance, all changes on that ydoc will be undone. If set to a specific type, only changes on that type or its children will be undone. Also accepts an array of types.
      * @param {UndoManagerOptions} options
      */
     constructor (typeScope, {
@@ -7092,11 +7130,11 @@
       deleteFilter = () => true,
       trackedOrigins = new Set([null]),
       ignoreRemoteMapChanges = false,
-      doc = /** @type {Doc} */ (isArray(typeScope) ? typeScope[0].doc : typeScope.doc)
+      doc = /** @type {Doc} */ (isArray(typeScope) ? typeScope[0].doc : typeScope instanceof Doc ? typeScope : typeScope.doc)
     } = {}) {
       super();
       /**
-       * @type {Array<AbstractType<any>>}
+       * @type {Array<AbstractType<any> | Doc>}
        */
       this.scope = [];
       this.doc = doc;
@@ -7136,7 +7174,7 @@
         // Only track certain transactions
         if (
           !this.captureTransaction(transaction) ||
-          !this.scope.some(type => transaction.changedParentTypes.has(type)) ||
+          !this.scope.some(type => transaction.changedParentTypes.has(/** @type {AbstractType<any>} */ (type)) || type === this.doc) ||
           (!this.trackedOrigins.has(transaction.origin) && (!transaction.origin || !this.trackedOrigins.has(transaction.origin.constructor)))
         ) {
           return
@@ -7175,7 +7213,7 @@
         }
         // make sure that deleted structs are not gc'd
         iterateDeletedStructs(transaction, transaction.deleteSet, /** @param {Item|GC} item */ item => {
-          if (item instanceof Item && this.scope.some(type => isParentOf(type, item))) {
+          if (item instanceof Item && this.scope.some(type => type === transaction.doc || isParentOf(/** @type {AbstractType<any>} */ (type), item))) {
             keepItem(item, true);
           }
         });
@@ -7196,13 +7234,17 @@
     }
 
     /**
-     * @param {Array<AbstractType<any>> | AbstractType<any>} ytypes
+     * Extend the scope.
+     *
+     * @param {Array<AbstractType<any> | Doc> | AbstractType<any> | Doc} ytypes
      */
     addToScope (ytypes) {
+      const tmpSet = new Set(this.scope);
       ytypes = isArray(ytypes) ? ytypes : [ytypes];
       ytypes.forEach(ytype => {
-        if (this.scope.every(yt => yt !== ytype)) {
-          if (ytype.doc !== this.doc) warn('[yjs#509] Not same Y.Doc'); // use MultiDocUndoManager instead. also see https://github.com/yjs/yjs/issues/509
+        if (!tmpSet.has(ytype)) {
+          tmpSet.add(ytype);
+          if (ytype instanceof AbstractType ? ytype.doc !== this.doc : ytype !== this.doc) warn('[yjs#509] Not same Y.Doc'); // use MultiDocUndoManager instead. also see https://github.com/yjs/yjs/issues/509
           this.scope.push(ytype);
         }
       });
@@ -8318,6 +8360,11 @@
     return { done, value: done ? undefined : fmap(value) }
   });
 
+  /**
+   * https://docs.yjs.dev/getting-started/working-with-shared-types#caveats
+   */
+  const warnPrematureAccess = () => { warn('Invalid access: Add Yjs type to a document before reading data.'); };
+
   const maxSearchMarker = 80;
 
   /**
@@ -8449,11 +8496,11 @@
     //   }
     // }
     // if (marker) {
-    //   if (window.lengthes == null) {
-    //     window.lengthes = []
-    //     window.getLengthes = () => window.lengthes.sort((a, b) => a - b)
+    //   if (window.lengths == null) {
+    //     window.lengths = []
+    //     window.getLengths = () => window.lengths.sort((a, b) => a - b)
     //   }
-    //   window.lengthes.push(marker.index - pindex)
+    //   window.lengths.push(marker.index - pindex)
     //   console.log('distance', marker.index - pindex, 'len', p && p.parent.length)
     // }
     if (marker !== null && abs(marker.index - pindex) < /** @type {YText|YArray<any>} */ (p.parent).length / maxSearchMarker) {
@@ -8515,6 +8562,7 @@
    * @return {Array<Item>}
    */
   const getTypeChildren = t => {
+    t.doc ?? warnPrematureAccess();
     let s = t._start;
     const arr = [];
     while (s) {
@@ -8708,6 +8756,7 @@
    * @function
    */
   const typeListSlice = (type, start, end) => {
+    type.doc ?? warnPrematureAccess();
     if (start < 0) {
       start = type._length + start;
     }
@@ -8743,6 +8792,7 @@
    * @function
    */
   const typeListToArray = type => {
+    type.doc ?? warnPrematureAccess();
     const cs = [];
     let n = type._start;
     while (n !== null) {
@@ -8792,6 +8842,7 @@
   const typeListForEach = (type, f) => {
     let index = 0;
     let n = type._start;
+    type.doc ?? warnPrematureAccess();
     while (n !== null) {
       if (n.countable && !n.deleted) {
         const c = n.content.getContent();
@@ -8881,6 +8932,7 @@
    * @function
    */
   const typeListGet = (type, index) => {
+    type.doc ?? warnPrematureAccess();
     const marker = findMarker(type, index);
     let n = type._start;
     if (marker !== null) {
@@ -9015,7 +9067,7 @@
 
   /**
    * Pushing content is special as we generally want to push after the last item. So we don't have to update
-   * the serach marker.
+   * the search marker.
    *
    * @param {Transaction} transaction
    * @param {AbstractType<any>} parent
@@ -9149,6 +9201,7 @@
    * @function
    */
   const typeMapGet = (parent, key) => {
+    parent.doc ?? warnPrematureAccess();
     const val = parent._map.get(key);
     return val !== undefined && !val.deleted ? val.content.getContent()[val.length - 1] : undefined
   };
@@ -9165,6 +9218,7 @@
      * @type {Object<string,any>}
      */
     const res = {};
+    parent.doc ?? warnPrematureAccess();
     parent._map.forEach((value, key) => {
       if (!value.deleted) {
         res[key] = value.content.getContent()[value.length - 1];
@@ -9182,6 +9236,7 @@
    * @function
    */
   const typeMapHas = (parent, key) => {
+    parent.doc ?? warnPrematureAccess();
     const val = parent._map.get(key);
     return val !== undefined && !val.deleted
   };
@@ -9232,13 +9287,16 @@
   };
 
   /**
-   * @param {Map<string,Item>} map
+   * @param {AbstractType<any> & { _map: Map<string, Item> }} type
    * @return {IterableIterator<Array<any>>}
    *
    * @private
    * @function
    */
-  const createMapIterator = map => iteratorFilter(map.entries(), /** @param {any} entry */ entry => !entry[1].deleted);
+  const createMapIterator = type => {
+    type.doc ?? warnPrematureAccess();
+    return iteratorFilter(type._map.entries(), /** @param {any} entry */ entry => !entry[1].deleted)
+  };
 
   /**
    * @module YArray
@@ -9329,7 +9387,8 @@
     }
 
     get length () {
-      return this._prelimContent === null ? this._length : this._prelimContent.length
+      this.doc ?? warnPrematureAccess();
+      return this._length
     }
 
     /**
@@ -9604,6 +9663,7 @@
      * @return {Object<string,any>}
      */
     toJSON () {
+      this.doc ?? warnPrematureAccess();
       /**
        * @type {Object<string,MapType>}
        */
@@ -9623,7 +9683,7 @@
      * @return {number}
      */
     get size () {
-      return [...createMapIterator(this._map)].length
+      return [...createMapIterator(this)].length
     }
 
     /**
@@ -9632,7 +9692,7 @@
      * @return {IterableIterator<string>}
      */
     keys () {
-      return iteratorMap(createMapIterator(this._map), /** @param {any} v */ v => v[0])
+      return iteratorMap(createMapIterator(this), /** @param {any} v */ v => v[0])
     }
 
     /**
@@ -9641,7 +9701,7 @@
      * @return {IterableIterator<MapType>}
      */
     values () {
-      return iteratorMap(createMapIterator(this._map), /** @param {any} v */ v => v[1].content.getContent()[v[1].length - 1])
+      return iteratorMap(createMapIterator(this), /** @param {any} v */ v => v[1].content.getContent()[v[1].length - 1])
     }
 
     /**
@@ -9650,7 +9710,7 @@
      * @return {IterableIterator<[string, MapType]>}
      */
     entries () {
-      return iteratorMap(createMapIterator(this._map), /** @param {any} v */ v => /** @type {any} */ ([v[0], v[1].content.getContent()[v[1].length - 1]]))
+      return iteratorMap(createMapIterator(this), /** @param {any} v */ v => /** @type {any} */ ([v[0], v[1].content.getContent()[v[1].length - 1]]))
     }
 
     /**
@@ -9659,6 +9719,7 @@
      * @param {function(MapType,string,YMap<MapType>):void} f A function to execute on every element of this YArray.
      */
     forEach (f) {
+      this.doc ?? warnPrematureAccess();
       this._map.forEach((item, key) => {
         if (!item.deleted) {
           f(item.content.getContent()[item.length - 1], key, this);
@@ -10207,7 +10268,7 @@
   };
 
   /**
-   * This will be called by the transction once the event handlers are called to potentially cleanup
+   * This will be called by the transaction once the event handlers are called to potentially cleanup
    * formatting attributes.
    *
    * @param {Transaction} transaction
@@ -10297,7 +10358,7 @@
 
   /**
    * The Quill Delta format represents changes on a text document with
-   * formatting information. For mor information visit {@link https://quilljs.com/docs/delta/|Quill Delta}
+   * formatting information. For more information visit {@link https://quilljs.com/docs/delta/|Quill Delta}
    *
    * @example
    *   {
@@ -10605,6 +10666,7 @@
      * @type {number}
      */
     get length () {
+      this.doc ?? warnPrematureAccess();
       return this._length
     }
 
@@ -10661,6 +10723,7 @@
      * @public
      */
     toString () {
+      this.doc ?? warnPrematureAccess();
       let str = '';
       /**
        * @type {Item|null}
@@ -10688,7 +10751,7 @@
     /**
      * Apply a {@link Delta} on this shared YText type.
      *
-     * @param {any} delta The changes to apply on this element.
+     * @param {Array<any>} delta The changes to apply on this element.
      * @param {object}  opts
      * @param {boolean} [opts.sanitize] Sanitize input delta. Removes ending newlines if set to true.
      *
@@ -10734,6 +10797,7 @@
      * @public
      */
     toDelta (snapshot, prevSnapshot, computeYChange) {
+      this.doc ?? warnPrematureAccess();
       /**
        * @type{Array<any>}
        */
@@ -11071,6 +11135,7 @@
        */
       this._currentNode = /** @type {Item} */ (root._start);
       this._firstCall = true;
+      root.doc ?? warnPrematureAccess();
     }
 
     [Symbol.iterator] () {
@@ -11099,8 +11164,12 @@
           } else {
             // walk right or up in the tree
             while (n !== null) {
-              if (n.right !== null) {
-                n = n.right;
+              /**
+               * @type {Item | null}
+               */
+              const nxt = n.next;
+              if (nxt !== null) {
+                n = nxt;
                 break
               } else if (n.parent === this._root) {
                 n = null;
@@ -11182,6 +11251,7 @@
     }
 
     get length () {
+      this.doc ?? warnPrematureAccess();
       return this._prelimContent === null ? this._length : this._prelimContent.length
     }
 
@@ -11702,7 +11772,7 @@
      * @param {YXmlElement|YXmlText|YXmlFragment} target The target on which the event is created.
      * @param {Set<string|null>} subs The set of changed attributes. `null` is included if the
      *                   child list changed.
-     * @param {Transaction} transaction The transaction instance with wich the
+     * @param {Transaction} transaction The transaction instance with which the
      *                                  change was created.
      */
     constructor (target, subs, transaction) {
@@ -11962,7 +12032,7 @@
      * This method is already assuming that `this.id.clock + this.length === this.id.clock`.
      * Also this method does *not* remove right from StructStore!
      * @param {AbstractStruct} right
-     * @return {boolean} wether this merged with right
+     * @return {boolean} whether this merged with right
      */
     mergeWith (right) {
       return false
@@ -12665,6 +12735,8 @@
     return new ContentJSON(cs)
   };
 
+  const isDevMode$1 = getVariable('node_env') === 'development';
+
   class ContentAny {
     /**
      * @param {Array<any>} arr
@@ -12674,6 +12746,7 @@
        * @type {Array<any>}
        */
       this.arr = arr;
+      isDevMode$1 && deepFreeze(arr);
     }
 
     /**
@@ -13402,8 +13475,7 @@
         if (this.left && this.left.constructor === Item) {
           this.parent = this.left.parent;
           this.parentSub = this.left.parentSub;
-        }
-        if (this.right && this.right.constructor === Item) {
+        } else if (this.right && this.right.constructor === Item) {
           this.parent = this.right.parent;
           this.parentSub = this.right.parentSub;
         }
@@ -13891,6 +13963,8 @@
     findIndexSS: findIndexSS,
     findRootTypeKey: findRootTypeKey,
     getItem: getItem,
+    getItemCleanEnd: getItemCleanEnd,
+    getItemCleanStart: getItemCleanStart,
     getState: getState,
     getTypeChildren: getTypeChildren,
     isDeleted: isDeleted,
@@ -14578,6 +14652,8 @@
     findIndexSS: findIndexSS,
     findRootTypeKey: findRootTypeKey,
     getItem: getItem,
+    getItemCleanEnd: getItemCleanEnd,
+    getItemCleanStart: getItemCleanStart,
     getState: getState,
     getTypeChildren: getTypeChildren,
     init: init$1,
@@ -14968,11 +15044,11 @@
     /**
      * @type {Array<Array<string|number>>}
      */
-    const pathes = [];
+    const paths = [];
     let calls = 0;
     map0.observeDeep(events => {
       events.forEach(event => {
-        pathes.push(event.path);
+        paths.push(event.path);
       });
       calls++;
     });
@@ -14980,7 +15056,7 @@
     map0.get('map').set('array', new YArray());
     map0.get('map').get('array').insert(0, ['content']);
     assert(calls === 3);
-    compare$2(pathes, [[], ['map'], ['map', 'array']]);
+    compare$2(paths, [[], ['map'], ['map', 'array']]);
     compare$1(users);
   };
 
@@ -14992,14 +15068,14 @@
     /**
      * @type {Array<Array<string|number>>}
      */
-    const pathes = [];
+    const paths = [];
     let calls = 0;
     const doc = users[0];
     map0.set('map', new YMap());
     map0.get('map').set('text1', new YText('initial'));
     map0.observeDeep(events => {
       events.forEach(event => {
-        pathes.push(event.path);
+        paths.push(event.path);
       });
       calls++;
     });
@@ -15008,7 +15084,7 @@
       map0.get('map').set('text2', new YText('new'));
     });
     assert(calls === 1);
-    compare$2(pathes, [['map'], ['map', 'text1']]);
+    compare$2(paths, [['map'], ['map', 'text1']]);
     compare$1(users);
   };
 
@@ -15398,6 +15474,8 @@
     testYmapSetsYmap: testYmapSetsYmap
   });
 
+  const isDevMode = getVariable('node_env') === 'development';
+
   /**
    * @param {t.TestCase} tc
    */
@@ -15408,6 +15486,28 @@
     const update = encodeStateAsUpdate(doc1);
     applyUpdate(doc2, update);
     compare$2(doc2.getArray('array').toArray(), ['hi']);
+  };
+
+  /**
+   * @param {t.TestCase} tc
+   */
+  const testFailsObjectManipulationInDevMode = tc => {
+    if (isDevMode) {
+      info('running in dev mode');
+      const doc = new Doc();
+      const a = [1, 2, 3];
+      const b = { o: 1 };
+      doc.getArray('test').insert(0, [a]);
+      doc.getMap('map').set('k', b);
+      fails(() => {
+        a[0] = 42;
+      });
+      fails(() => {
+        b.o = 42;
+      });
+    } else {
+      info('not in dev mode');
+    }
   };
 
   /**
@@ -16070,6 +16170,7 @@
     testDisconnectReallyPreventsSendingMessages: testDisconnectReallyPreventsSendingMessages,
     testEventTargetIsSetCorrectlyOnLocal: testEventTargetIsSetCorrectlyOnLocal,
     testEventTargetIsSetCorrectlyOnRemote: testEventTargetIsSetCorrectlyOnRemote,
+    testFailsObjectManipulationInDevMode: testFailsObjectManipulationInDevMode,
     testGarbageCollector: testGarbageCollector,
     testInsertAndDeleteEvents: testInsertAndDeleteEvents,
     testInsertAndDeleteEventsForTypes: testInsertAndDeleteEventsForTypes,
@@ -16476,7 +16577,7 @@
       },
       {
         insert: '\n',
-        // This attibutes has only list and no table-cell-line
+        // This attributes has only list and no table-cell-line
         attributes: {
           list: {
             rowspan: '1',
@@ -19196,6 +19297,72 @@
   };
 
   /**
+   * @param {t.TestCase} _tc
+   */
+  const testRejectUpdateExample = _tc => {
+    const tmpydoc1 = new Doc();
+    tmpydoc1.getArray('restricted').insert(0, [1]);
+    tmpydoc1.getArray('public').insert(0, [1]);
+    const update1 = encodeStateAsUpdate(tmpydoc1);
+    const tmpydoc2 = new Doc();
+    tmpydoc2.getArray('public').insert(0, [2]);
+    const update2 = encodeStateAsUpdate(tmpydoc2);
+
+    const ydoc = new Doc();
+    const restrictedType = ydoc.getArray('restricted');
+
+    /**
+     * Assume this function handles incoming updates via a communication channel like websockets.
+     * Changes to the `ydoc.getMap('restricted')` type should be rejected.
+     *
+     * - set up undo manager on the restricted types
+     * - cache pending* updates from the Ydoc to avoid certain attacks
+     * - apply received update and check whether the restricted type (or any of its children) has been changed.
+     * - catch errors that might try to circumvent the restrictions
+     * - undo changes on restricted types
+     * - reapply pending* updates
+     *
+     * @param {Uint8Array} update
+     */
+    const updateHandler = (update) => {
+      // don't handle changes of the local undo manager, which is used to undo invalid changes
+      const um = new UndoManager(restrictedType, { trackedOrigins: new Set(['remote change']) });
+      const beforePendingDs = ydoc.store.pendingDs;
+      const beforePendingStructs = ydoc.store.pendingStructs?.update;
+      try {
+        applyUpdate(ydoc, update, 'remote change');
+      } finally {
+        while (um.undoStack.length) {
+          um.undo();
+        }
+        um.destroy();
+        ydoc.store.pendingDs = beforePendingDs;
+        ydoc.store.pendingStructs = null;
+        if (beforePendingStructs) {
+          applyUpdateV2(ydoc, beforePendingStructs);
+        }
+      }
+    };
+    updateHandler(update1);
+    updateHandler(update2);
+    assert(restrictedType.length === 0);
+    assert(ydoc.getArray('public').length === 2);
+  };
+
+  /**
+   * Test case to fix #241
+   * @param {t.TestCase} _tc
+   */
+  const testGlobalScope = _tc => {
+    const ydoc = new Doc();
+    const um = new UndoManager(ydoc);
+    const yarray = ydoc.getArray();
+    yarray.insert(0, [1]);
+    um.undo();
+    assert(yarray.length === 0);
+  };
+
+  /**
    * Test case to fix #241
    * @param {t.TestCase} _tc
    */
@@ -19831,8 +19998,10 @@
     testConsecutiveRedoBug: testConsecutiveRedoBug,
     testDoubleUndo: testDoubleUndo,
     testEmptyTypeScope: testEmptyTypeScope,
+    testGlobalScope: testGlobalScope,
     testInconsistentFormat: testInconsistentFormat,
     testInfiniteCaptureTimeout: testInfiniteCaptureTimeout,
+    testRejectUpdateExample: testRejectUpdateExample,
     testSpecialDeletionCase: testSpecialDeletionCase,
     testTrackClass: testTrackClass,
     testTypeScope: testTypeScope,
@@ -19853,7 +20022,7 @@
   });
 
   /**
-   * Testing if encoding/decoding compatibility and integration compatiblity is given.
+   * Testing if encoding/decoding compatibility and integration compatibility is given.
    * We expect that the document always looks the same, even if we upgrade the integration algorithm, or add additional encoding approaches.
    *
    * The v1 documents were generated with Yjs v13.2.0 based on the randomisized tests.
@@ -20300,7 +20469,7 @@
     compare$2(docRestored.getArray().toArray(), []);
     compare$2(doc.getArray().toArray(), ['world']);
 
-    // now this snapshot reflects the latest state. It shoult still work.
+    // now this snapshot reflects the latest state. It should still work.
     const snap2 = snapshot$1(doc);
     const docRestored2 = createDocFromSnapshot(doc, snap2);
     compare$2(docRestored2.getArray().toArray(), ['world']);
@@ -20924,6 +21093,26 @@
   };
 
   /**
+   * Testing https://github.com/yjs/yjs/issues/657
+   *
+   * @param {t.TestCase} tc
+   */
+  const testRelativePositionCase7 = tc => {
+    const docA = new Doc();
+    const textA = docA.getText('text');
+    textA.insert(0, 'abcde');
+    // Create a relative position at index 2 in 'textA'
+    const relativePosition = createRelativePositionFromTypeIndex(textA, 2);
+    // Verify that the absolutes positions on 'docA' are the same
+    const absolutePositionWithFollow =
+      createAbsolutePositionFromRelativePosition(relativePosition, docA, true);
+    const absolutePositionWithoutFollow =
+      createAbsolutePositionFromRelativePosition(relativePosition, docA, false);
+    assert(absolutePositionWithFollow?.index === 2);
+    assert(absolutePositionWithoutFollow?.index === 2);
+  };
+
+  /**
    * @param {t.TestCase} tc
    */
   const testRelativePositionAssociationDifference = tc => {
@@ -20971,6 +21160,7 @@
     testRelativePositionCase4: testRelativePositionCase4,
     testRelativePositionCase5: testRelativePositionCase5,
     testRelativePositionCase6: testRelativePositionCase6,
+    testRelativePositionCase7: testRelativePositionCase7,
     testRelativePositionWithUndo: testRelativePositionWithUndo
   });
 
@@ -20980,14 +21170,23 @@
   if (isBrowser) {
     createVConsole(document.body);
   }
-  runTests({
+
+  /**
+   * @type {any}
+   */
+  const tests = {
     doc, map, array, text, xml, encoding, undoredo, compatibility, snapshot, updates, relativePositions
-  }).then(success => {
+  };
+
+  const run = async () => {
+
+    const success = await runTests(tests);
     /* istanbul ignore next */
     if (isNode) {
       process.exit(success ? 0 : 1);
     }
-  });
+  };
+  run();
 
 })();
 //# sourceMappingURL=tests.js.map

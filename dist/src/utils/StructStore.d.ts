@@ -17,7 +17,7 @@ export class StructStore {
 }
 export function getStateVector(store: StructStore): Map<number, number>;
 export function getState(store: StructStore, client: number): number;
-export function integretyCheck(store: StructStore): void;
+export function integrityCheck(store: StructStore): void;
 export function addStruct(store: StructStore, struct: GC | Item): void;
 export function findIndexSS(structs: Array<Item | GC>, clock: number): number;
 export function find(store: StructStore, id: ID): GC | Item;

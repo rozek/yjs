@@ -19,7 +19,7 @@ export function cleanupYTextFormatting(type: YText): number;
 export function cleanupYTextAfterTransaction(transaction: Transaction): void;
 /**
  * The Quill Delta format represents changes on a text document with
- * formatting information. For mor information visit {@link https://quilljs.com/docs/delta/|Quill Delta}
+ * formatting information. For more information visit {@link https://quilljs.com/docs/delta/|Quill Delta}
  *
  * @example
  *   {
@@ -135,14 +135,14 @@ export class YText extends AbstractType<YTextEvent> {
     /**
      * Apply a {@link Delta} on this shared YText type.
      *
-     * @param {any} delta The changes to apply on this element.
+     * @param {Array<any>} delta The changes to apply on this element.
      * @param {object}  opts
      * @param {boolean} [opts.sanitize] Sanitize input delta. Removes ending newlines if set to true.
      *
      *
      * @public
      */
-    public applyDelta(delta: any, { sanitize }?: {
+    public applyDelta(delta: Array<any>, { sanitize }?: {
         sanitize?: boolean | undefined;
     }): void;
     /**

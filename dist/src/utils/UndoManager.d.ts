@@ -49,14 +49,14 @@ export class UndoManager extends ObservableV2<{
     'stack-item-updated': (arg0: StackItemEvent, arg1: UndoManager) => void;
 }> {
     /**
-     * @param {AbstractType<any>|Array<AbstractType<any>>} typeScope Accepts either a single type, or an array of types
+     * @param {Doc|AbstractType<any>|Array<AbstractType<any>>} typeScope Limits the scope of the UndoManager. If this is set to a ydoc instance, all changes on that ydoc will be undone. If set to a specific type, only changes on that type or its children will be undone. Also accepts an array of types.
      * @param {UndoManagerOptions} options
      */
-    constructor(typeScope: AbstractType<any> | Array<AbstractType<any>>, { captureTimeout, captureTransaction, deleteFilter, trackedOrigins, ignoreRemoteMapChanges, doc }?: UndoManagerOptions);
+    constructor(typeScope: Doc | AbstractType<any> | Array<AbstractType<any>>, { captureTimeout, captureTransaction, deleteFilter, trackedOrigins, ignoreRemoteMapChanges, doc }?: UndoManagerOptions);
     /**
-     * @type {Array<AbstractType<any>>}
+     * @type {Array<AbstractType<any> | Doc>}
      */
-    scope: Array<AbstractType<any>>;
+    scope: Array<AbstractType<any> | Doc>;
     doc: Doc;
     deleteFilter: (arg0: Item) => boolean;
     trackedOrigins: Set<any>;
@@ -90,9 +90,11 @@ export class UndoManager extends ObservableV2<{
      */
     afterTransactionHandler: (transaction: Transaction) => void;
     /**
-     * @param {Array<AbstractType<any>> | AbstractType<any>} ytypes
+     * Extend the scope.
+     *
+     * @param {Array<AbstractType<any> | Doc> | AbstractType<any> | Doc} ytypes
      */
-    addToScope(ytypes: Array<AbstractType<any>> | AbstractType<any>): void;
+    addToScope(ytypes: Array<AbstractType<any> | Doc> | AbstractType<any> | Doc): void;
     /**
      * @param {any} origin
      */

@@ -78,8 +78,9 @@ export class Doc extends ObservableV2<DocEvents> {
      * lost (with false as a parameter).
      */
     isSynced: boolean;
+    isDestroyed: boolean;
     /**
-     * Promise that resolves once the document has been loaded from a presistence provider.
+     * Promise that resolves once the document has been loaded from a persistence provider.
      */
     whenLoaded: Promise<any>;
     whenSynced: Promise<any>;
