@@ -9,7 +9,7 @@ import {
   ContentType,
   followRedone,
   getItem,
-  ID, Doc, AbstractType // eslint-disable-line
+  StructStore, ID, Doc, AbstractType, // eslint-disable-line
 } from '../internals.js'
 
 import * as encoding from 'lib0/encoding'
@@ -66,7 +66,7 @@ export class RelativePosition {
      * after the meant position.
      * I.e. position 1 in 'ab' is associated to character 'b'.
      *
-     * If assoc < 0, then the relative position is associated to the caharacter
+     * If assoc < 0, then the relative position is associated to the character
      * before the meant position.
      *
      * @type {number}
@@ -257,6 +257,18 @@ export const readRelativePosition = decoder => {
 export const decodeRelativePosition = uint8Array => readRelativePosition(decoding.createDecoder(uint8Array))
 
 /**
+ * @param {StructStore} store
+ * @param {ID} id
+ */
+const getItemWithOffset = (store, id) => {
+  const item = getItem(store, id)
+  const diff = id.clock - item.id.clock
+  return {
+    item, diff
+  }
+}
+
+/**
  * Transform a relative position to an absolute position.
  *
  * If you want to share the relative position with other users, you should set
@@ -286,7 +298,7 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc, followUndo
     if (getState(store, rightID.client) <= rightID.clock) {
       return null
     }
-    const res = followUndoneDeletions ? followRedone(store, rightID) : { item: getItem(store, rightID), diff: 0 }
+    const res = followUndoneDeletions ? followRedone(store, rightID) : getItemWithOffset(store, rightID)
     const right = res.item
     if (!(right instanceof Item)) {
       return null

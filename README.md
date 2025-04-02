@@ -88,6 +88,8 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [JupyterLab](https://jupyter.org/) Collaborative computational Notebooks
 * [JupyterCad](https://jupytercad.readthedocs.io/en/latest/) Extension to
   JupyterLab that enables collaborative editing of 3d FreeCAD Models.
+* [JupyterGIS](https://github.com/geojupyter/jupytergis) Collaborative GIS
+  (Geographic Information System) editor in Jupyter 
 * [Hyperquery](https://hyperquery.ai/) A collaborative data workspace for
   sharing analyses, documentation, spreadsheets, and dashboards.
 * [Nosgestesclimat](https://nosgestesclimat.fr/groupe) The french carbon
@@ -101,8 +103,6 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [AWS SageMaker](https://aws.amazon.com/sagemaker/) Tools for building Machine
   Learning Models
 * [linear](https://linear.app) Streamline issues, projects, and product roadmaps.
-* [btw](https://www.btw.so) - Personal website builder
-* [AWS SageMaker](https://aws.amazon.com/sagemaker/) - Machine Learning Service
 * [Arkiter](https://www.arkiter.com/) - Live interview software
 * [Appflowy](https://www.appflowy.io/) - They use Yrs
 * [Multi.app](https://multi.app) - Multiplayer app sharing: Point, draw and edit
@@ -112,7 +112,7 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [Synthesia](https://www.synthesia.io) - Collaborative Video Editor
 * [thinkdeli](https://thinkdeli.com) - A fast and simple notes app powered by AI
 * [ourboard](https://github.com/raimohanska/ourboard) - A collaborative whiteboard
-  applicaiton
+  application
 * [Ellie.ai](https://ellie.ai) - Data Product Design and Collaboration
 * [GoPeer](https://gopeer.org/) - Collaborative tutoring
 * [screen.garden](https://screen.garden) - Collaborative backend for PKM apps.
@@ -120,12 +120,20 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [keystatic](https://github.com/Thinkmill/keystatic) - git-based CMS
 * [QDAcity](https://qdacity.com) - Collaborative qualitative data analysis platform
 * [Kanbert](https://kanbert.com) - Project management software
+* [Eclipse Theia](https://github.com/eclipse-theia/theia) - A cloud & desktop
+  IDE that runs in the browser.
+* [ScienHub](https://scienhub.com) - Collaborative LaTeX editor in the browser.
+* [Open Collaboration Tools](https://www.open-collab.tools/) - Collaborative
+editing for your IDE or custom editor
+* [Typst](https://typst.app/) - Compose, edit, and automate technical documents
+* [Kedyou](https://kedyou.com/) - Digital workspaces for tutoring
 
 ## Table of Contents
 
 * [Overview](#overview)
   * [Bindings](#bindings)
   * [Providers](#providers)
+  * [Tooling](#tooling)
   * [Ports](#ports)
 * [Getting Started](#getting-started)
 * [API](#api)
@@ -151,6 +159,7 @@ are implemented in separate modules.
 | [Quill](https://quilljs.com/) | ✔ | [y-quill](https://github.com/yjs/y-quill) | [demo](https://demos.yjs.dev/quill/quill.html) |
 | [CodeMirror](https://codemirror.net/) | ✔ | [y-codemirror](https://github.com/yjs/y-codemirror) | [demo](https://demos.yjs.dev/codemirror/codemirror.html) |
 | [Monaco](https://microsoft.github.io/monaco-editor/) | ✔ | [y-monaco](https://github.com/yjs/y-monaco) | [demo](https://demos.yjs.dev/monaco/monaco.html) |
+| [Ace](https://ace.c9.io/) | ✔ | [y-ace](https://github.com/bajrangCoder/y-ace) | |
 | [Slate](https://github.com/ianstormtaylor/slate) | ✔ | [slate-yjs](https://github.com/bitphinix/slate-yjs) | [demo](https://bitphinix.github.io/slate-yjs-example) |
 | [BlockSuite](https://github.com/toeverything/blocksuite) | ✔ | (native) | [demo](https://blocksuite-toeverything.vercel.app/?init) |
 | [Lexical](https://lexical.dev/) | ✔ | (native) | [demo](https://lexical.dev/docs/collaboration/react#see-it-in-action) |
@@ -159,6 +168,8 @@ are implemented in separate modules.
 | React | | [react-yjs](https://github.com/nikgraf/react-yjs) | [demo](https://react-yjs-example.vercel.app/) |
 | React / Vue / Svelte / MobX | | [SyncedStore](https://syncedstore.org) | [demo](https://syncedstore.org/docs/react) |
 | [mobx-keystone](https://mobx-keystone.js.org/) |  | [mobx-keystone-yjs](https://github.com/xaviergonz/mobx-keystone/tree/master/packages/mobx-keystone-yjs) | [demo](https://mobx-keystone.js.org/examples/yjs-binding) |
+| [PSPDFKit](https://www.nutrient.io/) |  | [yjs-pspdfkit](https://github.com/hoangqwe159/yjs-pspdfkit) | [demo](https://github.com/hoangqwe159/yjs-pspdfkit) |
+| [Rows n'Columns](https://www.rowsncolumns.app/) | ✔ | [@rowsncolumns/y-spreadsheet](https://docs.rowsncolumns.app/collaboration/yjs-collaboration) | |
 
 ### Providers
 
@@ -184,12 +195,12 @@ backends to y-websocket.
   <dt><a href="https://github.com/yjs/y-webrtc">y-webrtc</a></dt>
   <dd>
 Propagates document updates peer-to-peer using WebRTC. The peers exchange
-signaling data over signaling servers. Publically available signaling servers
+signaling data over signaling servers. Publicly available signaling servers
 are available. Communication over the signaling servers can be encrypted by
 providing a shared secret, keeping the connection information and the shared
 document private.
   </dd>
-  <dt><a href="https://github.com/liveblocks/liveblocks">@liveblocks/yjs</a></dt>
+  <dt><a href="https://github.com/liveblocks/liveblocks">@liveblocks/yjs </a> 🌟</dt>
   <dd>
 <a href="https://liveblocks.io/document/yjs">Liveblocks Yjs</a> provides a fully
 hosted WebSocket infrastructure and persisted data store for Yjs
@@ -197,14 +208,22 @@ documents. No configuration or maintenance is required. It also features
 Yjs webhook events, REST API to read and update Yjs documents, and a
 browser DevTools extension.
   </dd>
-  <dt><a href="https://github.com/drifting-in-space/y-sweet">y-sweet</a></dt>
+  <dt><a href="https://github.com/drifting-in-space/y-sweet">y-sweet</a> ⭐</dt>
   <dd>
 A standalone yjs server with persistence to S3 or filesystem. They offer a
 <a href="https://y-sweet.cloud">cloud service</a> as well.
   </dd>
-  <dt><a href="https://github.com/ueberdosis/hocuspocus">Hocuspocus</a></dt>
+  <dt><a href="https://github.com/ueberdosis/hocuspocus">Hocuspocus</a> ⭐</dt>
   <dd>
 A standalone extensible yjs server with sqlite persistence, webhooks, auth and more.
+  </dd>
+  <dt><a href="https://docs.superviz.com/collaboration/integrations/YJS/overview">@superviz/yjs</a></dt>
+  <dd>
+    SuperViz Yjs Provider comes with a secure, scalable real-time infrastructure
+    for Yjs documents, fully compatible with a set of real-time
+    collaboration components offered by SuperViz. This solution ensures
+    synchronization, offline editing, and real-time updates, enabling
+    multiple users to collaborate effectively within shared workspaces.
   </dd>
   <dt><a href="https://docs.partykit.io/reference/y-partykit-api/">PartyKit</a></dt>
   <dd>
@@ -250,6 +269,11 @@ The reactive data store for local-first apps. They support multiple CRDTs and
   <dd>
 Provider for sharing data in <a href="https://webxdc.org">webxdc chat apps</a>.
   </dd>
+  <dt><a href="https://www.secsync.com/">secsync</a></dt>
+  <dd>
+An architecture to relay end-to-end encrypted CRDTs over a central service.
+  </dd>
+
 </dl>
 
 #### Persistence Providers
@@ -266,11 +290,6 @@ network provider.
 Adds persistent storage to a server with MongoDB. Can be used with the
 y-websocket provider.
   </dd>
-  <dt><a href="https://github.com/toeverything/AFFiNE/tree/master/packages/y-indexeddb">
-@toeverything/y-indexeddb</a></dt>
-  <dd>
-Like y-indexeddb, but with sub-documents support and fully TypeScript.
-  </dd>
   <dt><a href="https://github.com/podraven/y-fire">y-fire</a></dt>
   <dd>
 A database and connection provider for Yjs based on Firestore.
@@ -286,9 +305,19 @@ A database and connection provider for Yjs based on Firestore.
   Provides persistent storage for a web server using PostgreSQL and
   is easily compatible with y-websocket.  
   </dd>
+  <dt><a href="https://github.com/kapv89/k_yrs_go">k_yrs_go</a></dt>
+  <dd>
+  Golang database server for YJS CRDT using Postgres + Redis
+  </dd>
 </dl>
 
-# Ports
+### Tooling
+
+* [y-sweet debugger](https://docs.jamsocket.com/y-sweet/advanced/debugger)
+* [liveblocks devtools](https://liveblocks.io/devtools)
+* [Yjs inspector](https://inspector.yjs.dev)
+
+### Ports
 
 There are several Yjs-compatible ports to other programming languages.
 
@@ -302,6 +331,7 @@ language bindings to other languages
   * [yswift](https://github.com/y-crdt/yswift) - Swift binding
   * [yffi](https://github.com/y-crdt/y-crdt/tree/main/yffi) - C-FFI
   * [ywasm](https://github.com/y-crdt/y-crdt/tree/main/ywasm) - WASM binding
+  * [y_ex](https://github.com/satoren/y_ex) - Elixir bindings
 * [ycs](https://github.com/yjs/ycs) - .Net compatible C# implementation.
 
 ## Getting Started
@@ -1080,7 +1110,7 @@ encoding format for document updates. If you prefer JSON encoding, you can
 simply JSON.stringify / JSON.parse the relative position instead.
   </dd>
   <b><code>Y.decodeRelativePosition(Uint8Array):RelativePosition</code></b>
-  <dd>Decode a binary-encoded relative position to a RelativePositon object.</dd>
+  <dd>Decode a binary-encoded relative position to a RelativePosition object.</dd>
 </dl>
 
 ### Y.UndoManager
@@ -1260,11 +1290,11 @@ More information about the specific implementation is available in
 
 CRDTs that are suitable for shared text editing suffer from the fact that they
 only grow in size. There are CRDTs that do not grow in size, but they do not
-have the characteristics that are benificial for shared text editing (like
+have the characteristics that are beneficial for shared text editing (like
 intention preservation). Yjs implements many improvements to the original
 algorithm that diminish the trade-off that the document only grows in size. We
 can't garbage collect deleted structs (tombstones) while ensuring a unique
-order of the structs. But we can 1. merge preceeding structs into a single
+order of the structs. But we can 1. merge preceding structs into a single
 struct to reduce the amount of meta information, 2. we can delete content from
 the struct if it is deleted, and 3. we can garbage collect tombstones if we
 don't care about the order of the structs anymore (e.g. if the parent was
