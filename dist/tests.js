@@ -472,7 +472,7 @@
   /**
    * Isomorphic module to work access the environment (query params, env variables).
    *
-   * @module map
+   * @module environment
    */
 
 
@@ -3329,6 +3329,7 @@
         });
         break
       }
+      case undefined: // undefined is often set as a constructor for objects
       case Object:
         if (length$1(a) !== length$1(b)) {
           _failMessage(message, 'Objects have a different number of attributes', path);
